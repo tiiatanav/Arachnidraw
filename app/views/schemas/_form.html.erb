@@ -1,0 +1,29 @@
+<%= form_for(@schema) do |f| %>
+  <% if @schema.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@schema.errors.count, "error") %> prohibited this schema from being saved:</h2>
+
+      <ul>
+      <% @schema.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :name %><br />
+    <%= f.text_field :name %>
+  </div>
+  <div class="field">
+    <%= f.label :json %><br />
+    <%= f.text_field :json %>
+  </div>
+  <div class="field">
+    <%= f.label :script %><br />
+    <%= f.text_field :script %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

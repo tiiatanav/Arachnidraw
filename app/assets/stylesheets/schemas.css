@@ -1,0 +1,37 @@
+/*
+  Place all the styles related to the matching controller here.
+  They will automatically be included in application.css.
+*/
+body{
+	background: #DAFFB5;
+}
+ #formHolder{
+ 	border:1px solid gray;
+	float:right; 
+	width:250px;
+	height: 500px;
+	overflow-y: auto;
+ }
+ canvas {
+ 	border:1px solid #d3d3d3;
+
+ }
+ .appSectionTitle { 
+ 	background:#c0c0c0;
+ 	padding:3px;
+ 	border:1px solid gray;
+ }
+ .appSection .appSectionTitle { 
+ 	background:#D7D7D7;
+ 	padding:3px;
+ 	padding-left:20px;
+ 	border:1px solid gray;
+ }
+ .right {float:right;}
+ #wrap{
+ 	background: white;
+ 	max-width:1200px;
+	min-width:900px;
+	margin-left:auto;
+	margin-right:auto;
+ }

@@ -1,0 +1,27 @@
+<h1>Listing schemas</h1>
+
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Json</th>
+    <th>Script</th>
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+
+<% @schemas.each do |schema| %>
+  <tr>
+    <td><%= schema.name %></td>
+    <td><%= schema.json %></td>
+    <td><%= schema.script %></td>
+    <td><%= link_to 'Show', schema %></td>
+    <td><%= link_to 'Edit', edit_schema_path(schema) %></td>
+    <td><%= link_to 'Destroy', schema, :method => :delete, :data => { :confirm => 'Are you sure?' } %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New Schema', new_schema_path %>
