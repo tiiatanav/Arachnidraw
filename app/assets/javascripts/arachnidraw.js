@@ -1,5 +1,19 @@
 window.onload = function() {
+	var div = document.getElementById("AppHolder");
+	if (div != null) {
+		var prop=document.createElement("div");	
+		prop.setAttribute("id", "formHolder");
+		prop.innerHTML="<div class=\"appSectionTitle\">Properties area</div><p>Hint: Double click on a element to see its properties</p>"
+		div.appendChild(prop);
+	
+		var c = document.createElement("canvas");	
+		c.setAttribute("id", "myCanvas");
+		c.setAttribute("width", div.clientWidth - prop.offsetWidth-5);
+		c.setAttribute("height", 500);
+		div.appendChild(c);
+	
    loadImages(images, windowLoadHandler);
+	}
 };
 window.onresize = function(event) {
    canvas = document.getElementById('myCanvas');
@@ -13,37 +27,27 @@ window.onresize = function(event) {
 
 //window.addEventListener("load", windowLoadHandler, false);
 function windowLoadHandler(img) {
-	//console.log(images,img);
+	
 	images = img;
+
+	
+
+
 	app = new canvasApp();
+
 }
 
-function canvasApp() { 
+function canvasApp() {	
+var c=document.getElementById("myCanvas");
+var ctx=c.getContext("2d");
 
-var div = document.getElementById("AppHolder");
-if (div != null) {
-	var prop=document.createElement("div");
-	prop.setAttribute("id", "formHolder");
-	prop.innerHTML="<div class=\"appSectionTitle\">Properties area</div><p>Hint: Double click on a element to see its properties</p>"
-	div.appendChild(prop);
-	
-	var c = document.createElement("canvas");
-	c.setAttribute("id", "myCanvas");
-	c.setAttribute("width", div.clientWidth- prop.offsetWidth-2);
-	c.setAttribute("height", 500);
-	div.appendChild(c);
+var menu=new Menu();
 
-	
+this.c=c;
+this.ctx=ctx;
 
-	var ctx = c.getContext("2d");
+init();
 
-	var menu=new Menu();
-	//console.log(menu);
-	this.c=c;
-	this.ctx=ctx;
-
-	init();
-}
 	
 var shapes;
 var being_dragged; // dragged element
@@ -64,18 +68,50 @@ var textColor;
 var menuHeight=40;
 this.targetElement='formHolder';
 var targetElement = this.targetElement;
+var save_uri = "schemas.json";
 
-this.exportJSON=exportJSON;
-function exportJSON(){
-	app = this;
-	var el = document.getElementById(targetElement);
+
+this.save=save;
+function save(){
+	$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}},
+		function(data){ console.log("recieved ",data);	});
+}
+
+this.load=load;
+function load(){
+	var holder = document.getElementById(targetElement);
+	holder.innerHTML="";
+	var loadSection = html.addSection(holder,'loadSection', 'Open Schema', false);
+	html.breakLine(loadSection);
+	$.get(save_uri, {},
+		function(data){
+			$.each(data, function(key, val){
+				var span = document.createElement("span");
+				span.innerHTML=val.name;
+				span.setAttribute("class", "loadSchema");
+				span.onclick=function(){
+					importJSON(val.json);
+					$(".loadedSchema").removeClass("loadedSchema");
+					this.setAttribute("class", "loadSchema loadedSchema");
+				}
+				loadSection.appendChild(span);
+				//html.breakLine(loadSection);
+			});
+			  
+		});
+}
+
+this.makeJSON=makeJSON;
+function makeJSON(){
+	var app = this;
+	
 	var nodes = "\"nodes\": [  ";
 	var arrows = "\n\"arrows\": [  ";
 	var routers = "\n\"routers\": [  ";
 	var switches = "\n\"switches\": [  ";
 	
 	var txt = "{ ";
-	el.innerHTML = "";
+	
 	var i = 0;
 	$.each(shapes, function(key,val){
 		for (i=0; i < val.length; i++) {
@@ -93,13 +129,18 @@ function exportJSON(){
 
 	
   	txt += nodes.slice(0, -2)+"], "+routers.slice(0,-2)+"], "+switches.slice(0,-2)+"], "+arrows.slice(0,-2)+"]}";
+  	return txt;
+}
+
+this.exportJSON=exportJSON;
+function exportJSON(){
 	
-	var area = document.createElement("textarea");
-	area.setAttribute("id", "JSON");
-	area.setAttribute('rows',20);
-	area.setAttribute('cols',25);
-	area.innerHTML = txt;
- 	el.appendChild(area);
+	txt=makeJSON();
+	var el = document.getElementById(targetElement);
+	el.innerHTML = "";
+
+	var jsonSection = html.addSection(el,'jsonSection', 'Export/Import JSON', false);
+
 	var element = document.createElement("button");
     //Assign different attributes to the element.
     element.innerHTML = "Import";
@@ -109,7 +150,17 @@ function exportJSON(){
      app.importJSON(area.value);
     };
     //Append the element in page (in span).
-    el.appendChild(element);
+    jsonSection.appendChild(element);
+
+	html.breakLine(jsonSection);
+
+	var area = document.createElement("textarea");
+	area.setAttribute("id", "JSON");
+	area.setAttribute('style',"display:block; width:95%; margin:auto; min-height:430px;");
+	area.innerHTML = txt;
+ 	jsonSection.appendChild(area);
+
+	
   	//this.post(txt);
 }
 
@@ -117,7 +168,7 @@ this.importJSON=importJSON;
 function importJSON(text){
  shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};
  var json=JSON.parse(text);
- //console.log(json.nodes,json.arrows);
+
  $.each(json, function(key,val){
 	for (i=0; i < val.length; i++) {
 		var add;
@@ -138,7 +189,6 @@ function importJSON(text){
   			add.fromJSON(val[i]);
   			shapes.routers.push(add);	
   		}
-  		//console.log(shapes);
 
 	}
 });
@@ -280,7 +330,6 @@ function dblclickListener(evt){
 				//the following variable will be reset if this loop repeats with another successful hit:
 				being_dbl=val[i];
 				being_dbl.show_form(document.getElementById(targetElement), i);
-				//console.log(shapes[i]);
 			}
 		}
 	});
@@ -311,7 +360,6 @@ function mouseDownListener(evt) {
 			}
 		}
 	});
-	//console.log(being_clicked);
 	if (dragging && being_used==null) {
 		window.addEventListener("mousemove", mouseMoveListener, false);
 				
@@ -332,7 +380,7 @@ function mouseDownListener(evt) {
           if(menu.items.hasOwnProperty(prop)){
           	
   		   	if (menu.items[prop].hover(mouseX, mouseY)){
-  		    	//console.log(menu.items[prop].hover(mouseX, mouseY));
+  		    	
   		    	being_used = menu.items[prop];
   		    	dragging = true;
   		    } 
@@ -473,7 +521,7 @@ function menuHelper(evt){
 				being_clicked=null;
 			}
 
-		} else if(being_used.type=="select2"){//	console.log('select2', being_used.nodes);
+		} else if(being_used.type=="select2"){
 			// activate/deactivate when still over the menuitem wait until 2 elements are selected
 			if (being_used.hover(mouseX, mouseY)) {
 				being_used.click();
@@ -491,13 +539,13 @@ function menuHelper(evt){
 					// create a holder for the nodes with the currently selected object
 					// if there is no node holder OR when there are already 2 nodes selected
 					being_used.nodes=[being_dragged];
-					//console.log("first added");
+					
 					being_dragged=null;
 
 				} else if (being_dragged!=being_used.nodes[0]){
 					//there is one node, add this one and connect them
 					being_used.nodes.push(being_dragged);
-					//console.log("second added");
+					
 					being_used.drop(being_used.nodes[0],being_used.nodes[1]);
 					being_used.nodes=[];
 					being_dragged=null;

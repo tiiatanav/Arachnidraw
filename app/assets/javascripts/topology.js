@@ -15,10 +15,10 @@ Object.prototype.each = function(callback){
 PRELOAD ALL IMAGES
 */
 
-var images = {'menu':['assets/new.png','assets/arrow.png',  'assets/duplicate.png', 'assets/trash.png', 'assets/json.png'],
-              'nodes':['assets/workstation.svg', 'assets/workstation_green.svg','assets/workstation_red.svg'],
-              'switches':['assets/switch.svg'],
-              'routers':['assets/router.svg']
+var images = {'menu':['/assets/new.svg', '/assets/open.svg','/assets/save.svg', '/assets/hand.svg','/assets/arrow2.svg',  '/assets/duplicate.svg', '/assets/trash.svg', '/assets/json.png'],
+              'nodes':['/assets/workstation.svg', '/assets/workstation_green.svg','/assets/workstation_red.svg'],
+              'switches':['/assets/switch.svg'],
+              'routers':['/assets/router.svg']
 };
 
 function loadImages(sources, callback) {
@@ -35,7 +35,7 @@ function loadImages(sources, callback) {
       images[key][i] = new Image();
       images[key][i].onload = function(){
         if (++loadedImages >= numImages) { 
-          //console.log(images);
+         
           callback(images); 
         }
       };
@@ -382,7 +382,7 @@ function show_form(el, index){
    alpha2 = Math.abs(this.angle)-Math.abs(tmp_a.angle);
    // calculate distance 
    h=Math.abs(a*Math.sin(alpha2));
-  // console.log(a,b,c, 'h',h,'alpha',alpha,alpha2,'beta',beta, beta>0 && alpha>0);
+ 
 // TODO! this will work on the extended arrow, need to limit it! ie with angles
    // return if the mouse is outside nodes and close enough to the arrow
    return h<min && bool && (beta>0 && alpha>0);
@@ -392,6 +392,7 @@ function show_form(el, index){
 
   this.toJSONstring=toJSON;
  function toJSON(){
+
     var ignore = ['angle', 'draggable','editable', "x1", "y1", "x2","y2", "sections"];
     tmp="{ ";//\"type\" : \"Arrow\", \"id\" : "+app.getIndexOf(this)+", ";
     for(var prop in this) {
@@ -418,7 +419,7 @@ function show_form(el, index){
       if(this.hasOwnProperty(prop)){         
           if (typeof this[prop] != "function"){
             if (prop=="to" || prop=="from"){
-              //console.log(prop,json[prop]);
+          
                 inf=json[prop].split('-');
                 this[prop]=app.getShape(inf[0], inf[1]);
               } else {
@@ -427,7 +428,7 @@ function show_form(el, index){
           } 
       }   
    }
-//   console.log(this);
+
  }
 
 }
@@ -711,7 +712,7 @@ function show_form(el, index){
   function hover(x,y){
    dx = x - this.x;
    dy = y - this.y;
-   // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+ 
     return (dx>=0 && dx<=this.width*(this.scale/100) && dy>=0 && dy<=this.height*(this.scale/100));
  }
 
@@ -935,7 +936,7 @@ function show_form(el, index){
   function hover(x,y){
    dx = x - this.x;
    dy = y - this.y;
-   // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+ 
     return (dx>=0 && dx<=this.width*(this.scale/100) && dy>=0 && dy<=this.height*(this.scale/100));
  }
 
@@ -1139,7 +1140,7 @@ function show_form(el, index){
   function hover(x,y){
    dx = x - this.x;
    dy = y - this.y;
-   // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+   
     return (dx>=0 && dx<=this.width*(this.scale/100) && dy>=0 && dy<=this.height*(this.scale/100));
  }
 
@@ -1202,11 +1203,11 @@ function Menu(){
     'text':'Clear page', 
     'type':"click",
     'active':false,
-    'x':3, 
-    'y':1, 
+    'x':0, 
+    'y':0, 
     'img':images.menu[0],
-    'width':25,
-    'height':28,
+    'width':35,
+    'height':35,
     'click': function() {
        app.removeAll();
     },
@@ -1216,20 +1217,106 @@ function Menu(){
     'hover': function(x,y){
       dx = x - this.x;
       dy = y - this.y;
-      // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+      
        return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
     }
 
+  },'open':{
+    'text':'Open saved schema', 
+    'type':"click",
+    'active':false,
+    'x':35, 
+    'y':0, 
+    'img':images.menu[1],
+    'width':35,
+    'height':35,
+    'click': function() {
+       app.load();
+    },
+    'draw':function(ctx){
+      draw(this, ctx);
+    },
+    'hover': function(x,y){
+      dx = x - this.x;
+      dy = y - this.y;
+       return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+    }
+
+  },
+  'save':{
+    'text':'Save to database', 
+    'type':"click",
+    'active':false,
+    'x':70, 
+    'y':0, 
+    'img':images.menu[2],
+    'width':35,
+    'height':35,
+    'click': function() {
+      var holder = document.getElementById(app.targetElement);
+      holder.innerHTML="";
+      var saveSection = html.addSection(holder,'saveSection', 'Save Schema', false);
+  
+      var p = document.createElement("p");
+      p.innerHTML=""
+      saveSection.appendChild(p);
+  
+      var name = document.createElement("input");
+      name.setAttribute("type","text");
+      name.setAttribute("id", "schemaName");
+      name.setAttribute("placeholder", "Schema name here");
+      saveSection.appendChild(name);
+
+      html.breakLine(saveSection);
+
+      var submit = document.createElement("button");
+      submit.onclick=function(){app.save();};
+
+      submit.innerHTML="Save";
+      saveSection.appendChild(submit);
+    },
+    'draw':function(ctx){
+      draw(this, ctx);
+    },
+    'hover': function(x,y){
+      dx = x - this.x;
+      dy = y - this.y;
+      
+       return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+    }
+
+  },
+  'hand':{
+    'text':'Move elements', 
+    'type':"click",
+    'active':false,
+    'x':105, 
+    'y':0, 
+    'img':images.menu[3],
+    'width':35,
+    'height':35,
+    'click': function() {
+       
+    },
+    'draw':function(ctx){
+      draw(this, ctx);
+    },
+    'hover': function(x,y){
+      dx = x - this.x;
+      dy = y - this.y;
+      
+       return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+    }
   },
   'newNode':{
     'text':'Drag your mouse where you want to add a new Node', 
     'type':"drag",
     'active':false,
-    'x':30, 
-    'y':3, 
+    'x':140, 
+    'y':7, 
     'img':images.nodes[0],
-    'width':30,
-    'height':25,
+    'width':35,
+    'height':27,
     'click': function(x,y) {
        this.drop(x,y);
     },
@@ -1243,7 +1330,7 @@ function Menu(){
     'hover': function(x,y){
       dx = x - this.x;
       dy = y - this.y;
-      // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+      
        return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
     }
 
@@ -1252,11 +1339,11 @@ function Menu(){
     'text':'Drag your mouse where you want to add a new Router', 
     'type':"drag",
     'active':false,
-    'x':60, 
-    'y':5, 
+    'x':175, 
+    'y':14, 
     'img':images.routers[0],
-    'width':30,
-    'height':20,
+    'width':35,
+    'height':21,
     'click': function(x,y) {
        this.drop(x,y);
     },
@@ -1270,7 +1357,7 @@ function Menu(){
     'hover': function(x,y){
       dx = x - this.x;
       dy = y - this.y;
-      // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+    
        return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
     }
 
@@ -1279,11 +1366,11 @@ function Menu(){
     'text':'Drag your mouse where you want to add a new Switch', 
     'type':"drag",
     'active':false,
-    'x':90, 
-    'y':7, 
+    'x':210, 
+    'y':15, 
     'img':images.switches[0],
-    'width':30,
-    'height':15,
+    'width':35,
+    'height':20,
     'click': function(x,y) {
        this.drop(x,y);
     },
@@ -1297,7 +1384,7 @@ function Menu(){
     'hover': function(x,y){
       dx = x - this.x;
       dy = y - this.y;
-      // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+      
        return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
     }
   }, 
@@ -1305,15 +1392,15 @@ function Menu(){
     'text':'Select two items to connect', 
     'type':"select2",
     'active':false,
-    'x':120, 
-    'y':3, 
-    'img':images.menu[1],
-    'width':30,
-    'height':25,
+    'x':245, 
+    'y':0, 
+    'img':images.menu[4],
+    'width':35,
+    'height':35,
     'click': function() {
        // toggle the activness of the button
        this.active=!this.active;
-       //console.log("connect" ,this.active);
+       
     },
     'drop':function(from, to){
        tmp = new Arrow(0, 0, 0,0);
@@ -1327,7 +1414,7 @@ function Menu(){
     'hover': function(x,y){
       dx = x - this.x;
       dy = y - this.y;
-      // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+     
        return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
     }
   }, 
@@ -1335,15 +1422,15 @@ function Menu(){
     'text':'Drag items to duplicate', 
     'type':"drag1",
     'active':false,
-    'x':153, 
-    'y':1, 
-    'img':images.menu[2],
-    'width':25,
-    'height':28,
+    'x':280, 
+    'y':0, 
+    'img':images.menu[5],
+    'width':35,
+    'height':35,
     'click': function() {
        // toggle the activness of the button
        this.active = !this.active;
-       //console.log("delete ",this.active);
+       
     },
     'drop':function(obj, x, y){
         nobj = obj.copy();
@@ -1357,7 +1444,7 @@ function Menu(){
     'hover': function(x,y){
       dx = x - this.x;
       dy = y - this.y;
-      // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+     
        return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
     }
 
@@ -1366,15 +1453,15 @@ function Menu(){
     'text':'Select items to delete', 
     'type':"select1",
     'active':false,
-    'x':180, 
+    'x':315, 
     'y':0, 
-    'img':images.menu[3],
-    'width':30,
-    'height':30,
+    'img':images.menu[6],
+    'width':35,
+    'height':35,
     'click': function() {
        // toggle the activness of the button
        this.active = !this.active;
-       //console.log("delete ",this.active);
+       
     },
     'drop':function(obj){
        app.remove(obj);
@@ -1385,7 +1472,6 @@ function Menu(){
     'hover': function(x,y){
       dx = x - this.x;
       dy = y - this.y;
-      // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
        return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
     }
 
@@ -1393,11 +1479,11 @@ function Menu(){
     'text':'Export JSON', 
     'type':"click",
     'active':false,
-    'x':210, 
-    'y':3, 
-    'img':images.menu[4],
-    'width':30,
-    'height':25,
+    'x':350, 
+    'y':0, 
+    'img':images.menu[7],
+    'width':35,
+    'height':35,
     'click': function() {
        app.exportJSON();
     },
@@ -1407,13 +1493,13 @@ function Menu(){
     'hover': function(x,y){
       dx = x - this.x;
       dy = y - this.y;
-      // console.log(dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
+     
        return (dx>=0 && dx<=this.width && dy>=0 && dy<=this.height);
     }
 
   }
  }
- //console.log(this.items);
+ 
 
  function draw(item, ctx){
    // TODO: menu highlighting broken!
@@ -1472,17 +1558,24 @@ function HTML() {
 }
 
 this.addSection=addSection;
-function addSection(el, id, titleText){
-  key=document.getElementById('id').value;
-  typ=document.getElementById('type').value;
-  temp=app.getShape(typ, parseInt(key));
-  // make a link to expand/collapse
+function addSection(el, id, titleText, dynamic){
+  dynamic = typeof(dynamic) != 'undefined'? dynamic:true;
+   // make a link to expand/collapse
   var tog=document.createElement('div');
   tog.setAttribute('class','right');
-  if (temp.sections[id]){
-    tog.innerHTML = "Collapse";
+
+  if(dynamic){
+    key=document.getElementById('id').value;
+    typ=document.getElementById('type').value;
+    temp=app.getShape(typ, parseInt(key));
+   
+    if (temp.sections[id]){
+      tog.innerHTML = "Collapse";
+    } else {
+      tog.innerHTML = "Expand";
+    }
   } else {
-    tog.innerHTML = "Expand";
+    tog.innerHTML = "Collapse";
   }
   tog.style.padding = "3px";
   tog.style.cursor = "pointer";
@@ -1491,11 +1584,11 @@ function addSection(el, id, titleText){
     if (tog.innerHTML=="Collapse"){
       tog.nextElementSibling.nextElementSibling.style.display='none';
       tog.innerHTML="Expand";
-      temp.sections[id]=false;
+      if(dynamic) temp.sections[id]=false;
     } else {
       tog.nextElementSibling.nextElementSibling.style.display='block';
       tog.innerHTML="Collapse";
-      temp.sections[id]=true;
+      if(dynamic) temp.sections[id]=true;
     }
   };
     // make the header title area
@@ -1505,7 +1598,7 @@ function addSection(el, id, titleText){
 
   // make a div for the elements
   var element=document.createElement('div');
-  if (!temp.sections[id]){
+  if (dynamic && !temp.sections[id]){
     element.style.display="none";
   } 
   element.setAttribute("id", id);
@@ -1543,7 +1636,7 @@ this.addInput=addInput;
       key=document.getElementById('id').value;
       typ=document.getElementById('type').value;
       temp=app.getShape(typ, parseInt(key));
-     // console.log(temp);
+     
       if (type=="number" || type=="range") {
         temp[id]=parseFloat(element.value);
       } else {
@@ -1694,12 +1787,11 @@ function addIP(el, id, value){
       } 
      
       if (nr<3 && this.value.length>2) {
-        //console.log("too long");
+        
         var next = document.getElementById(id+"-"+(nr+1));
         next.value="";
         next.focus();
       } 
-      //console.log(newvalue);
       temp[id] = newvalue.slice(0,-1); 
     };
 
@@ -1720,7 +1812,7 @@ function addIP(el, id, value){
 this.addTextSelect=addTextSelect;
 function addTextSelect(el, id, value, options, index) {
  index = typeof(index) != 'undefined'? index:"";
- //console.log("log: ",id, value, index);
+
  var element = document.createElement("select");
     //Assign different attributes to the element.
     element.setAttribute("value", value);
@@ -1776,7 +1868,7 @@ this.addSubInput=addSubInput;
       key=document.getElementById('id').value;
       typ=document.getElementById('type').value;
       temp=app.getShape(typ, parseInt(key));
-     // console.log(temp);
+  
       var inf=id.split("-");
       if (type=="number") {
         temp[inf[0]][index][inf[1]]=parseFloat(element.value);
@@ -1801,7 +1893,7 @@ function addAnother(el, what){
     temp=app.getShape(typ, parseInt(key));
     temp[what].push(temp.defaults[what]);
     temp.show_form(el.parentElement.parentElement, key); 
-    //console.log(temp[what]);
+    
   }
   el.appendChild(button);
 }
