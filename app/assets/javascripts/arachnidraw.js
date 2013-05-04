@@ -1,4 +1,5 @@
 window.onload = function() {
+	// only load functionality when there is a proper placeholder present
 	var div = document.getElementById("AppHolder");
 	if (div != null) {
 		var prop=document.createElement("div");	
@@ -15,6 +16,7 @@ window.onload = function() {
    loadImages(images, windowLoadHandler);
 	}
 };
+
 window.onresize = function(event) {
    canvas = document.getElementById('myCanvas');
    if (canvas!=null){
@@ -29,10 +31,6 @@ window.onresize = function(event) {
 function windowLoadHandler(img) {
 	
 	images = img;
-
-	
-
-
 	app = new canvasApp();
 
 }
@@ -73,8 +71,17 @@ var save_uri = "schemas.json";
 
 this.save=save;
 function save(){
-	$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}},
-		function(data){ console.log("recieved ",data);	});
+	$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}})
+	.done(function(data) {
+		$("#saveInfo").html("Save was successful").css("color","green");		
+	}).fail(function(data) { 
+		$("#saveInfo").html("Name in use, pick another one.").css("color","red");
+	});
+	// hide message after a few seconds
+	setTimeout(function(){
+		$("#saveInfo").html("");
+	},5000);
+	
 }
 
 this.load=load;
@@ -159,9 +166,6 @@ function exportJSON(){
 	area.setAttribute('style',"display:block; width:95%; margin:auto; min-height:430px;");
 	area.innerHTML = txt;
  	jsonSection.appendChild(area);
-
-	
-  	//this.post(txt);
 }
 
 this.importJSON=importJSON;

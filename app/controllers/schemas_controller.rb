@@ -41,7 +41,7 @@ class SchemasController < ApplicationController
   # POST /schemas.json
   def create
     @schema = Schema.new(params[:schema])
-    
+
     respond_to do |format|
       if @schema.save
         format.html { redirect_to @schema, :notice => 'Schema was successfully created.' }
@@ -82,7 +82,7 @@ class SchemasController < ApplicationController
   end
 
   def draw
-    @schema = Schema.new
+    @schema = Schema.find_by_id(12)
     @test = @schema.make_script
   end
 end

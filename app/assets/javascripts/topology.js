@@ -504,6 +504,7 @@ this.bridges = [];
 this.sections={ "styleSection":true, "nodeSection":true, 
                 "featureSection":true, "diskSection":true, 
                 "networkSection":true,  "bridgeSection":true};
+
 this.defaults={"disks":{"device":"disk", 
                 "type":"file", 
                 "driverName":"qemu", 
@@ -514,6 +515,7 @@ this.defaults={"disks":{"device":"disk",
               },
               "networks":{"name":"internal1", "dev":"int1", "mac":""},
               "bridges":{"name":"bridge1", "dev":"br1", "mac":""} };
+this.targetDevs={"virtio":"vd", "ide":"hd", "scsi":"sd", "xen":"xvd", "usb":"sd", "sata":"sd"}
  this.draw=draw;
  function draw(ctx){
     var x = this.x;
@@ -572,6 +574,7 @@ this.defaults={"disks":{"device":"disk",
 
  this.show_form=show_form;
 function show_form(el, index){
+    alpha=["a", "b", "c", "d", "e", "f", "g", "h"];
     el.innerHTML="";
    // to track the id
    html.addInput(el,'hidden','id',index);
@@ -605,6 +608,7 @@ function show_form(el, index){
    html.addTextSelect(nodeSection,'memory_unit',this.memory_unit, 
                       ["b", "KB", "KiB", "MB", "MiB", "GB", "GiB", "TB", "TiB"]);
    html.breakLine(nodeSection);
+   // validate memory
    if (this.memory<this.current_memory) this.current_memory=this.memory;
    html.addLabel(nodeSection, 'current_memory','Current memory');
    html.addInput(nodeSection,'number','current_memory',this.current_memory, this.memory, 1);
@@ -620,18 +624,22 @@ function show_form(el, index){
       html.addTextSelect(diskSection,'disks-device',this.disks[i].device, 
                           [  "floppy", "disk", "cdrom", "lun"], i);
       html.breakLine(diskSection);
+
       html.addLabel(diskSection, 'type','Device type');
       html.addTextSelect(diskSection,'disks-type',this.disks[i].type, 
                           [ "file", "block", "dir", "network"], i);
       html.breakLine(diskSection);
+
       html.addLabel(diskSection, 'driverName','Driver name');
       html.addTextSelect(diskSection,'disks-driverName',this.disks[i].driverName, 
         [ "qemu"], i);
       html.breakLine(diskSection);
+
       html.addLabel(diskSection, 'driverType','Driver type');
       html.addTextSelect(diskSection,'disks-driverType',this.disks[i].driverType, 
         [ "raw", "bochs", "qcow2", "qed"], i);
       html.breakLine(diskSection);
+
       html.addLabel(diskSection, 'source','Image');
       html.addSubInput(diskSection,'text','disks-source',this.disks[i].source, i );
       html.breakLine(diskSection);
@@ -640,9 +648,12 @@ function show_form(el, index){
       html.addTextSelect(diskSection,'disks-targetBus',this.disks[i].targetBus, 
         ["ide", "scsi", "virtio", "xen", "usb", "sata"], i);
       html.breakLine(diskSection);
-      html.addLabel(diskSection, 'targetDev','Target dev');
-      html.addSubInput(diskSection,'text','disks-targetDev',this.disks[i].targetDev, i);
+
+      // set target dev according to the target bus + letter
+      this.disks[i].targetDev=this.targetDevs[this.disks[i].targetBus]+alpha[i];
+      html.addLabel(diskSection, 'targetDev','Target dev is <b>'+this.disks[i].targetDev+"</b>");
       html.breakLine(diskSection);
+
       html.removeThis(diskSection, "disks", i);
       html.breakLine(diskSection);
       html.hrLine(diskSection);
@@ -1271,9 +1282,13 @@ function Menu(){
 
       var submit = document.createElement("button");
       submit.onclick=function(){app.save();};
-
       submit.innerHTML="Save";
       saveSection.appendChild(submit);
+
+      var info = document.createElement("p");
+      info.setAttribute("id","saveInfo");
+
+      saveSection.appendChild(info);
     },
     'draw':function(ctx){
       draw(this, ctx);

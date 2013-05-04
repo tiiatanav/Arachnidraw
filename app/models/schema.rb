@@ -1,121 +1,247 @@
 class Schema < ActiveRecord::Base
+  before_save :make_script
   attr_accessible :json, :name, :script
 
 def make_script
-	test=make_network("testing", "nat1", "192.14.23.2", "255.255.255.0", true);
+  tmp=JSON.parse(self.json);
+  test=""
+
+  test+=setup(tmp)
+
+  guests=tmp['nodes']
+  routers=tmp['routers']
+  switches=tmp['switches']
+
+  (0..guests.length-1).each do |i|
+    test += make_guest(guests[i], i)
+  end
+
+  (0..routers.length-1).each do |i|
+    test += make_network(routers[i], "routers", i)
+  end
+
+  (0..switches.length-1).each do |i|
+    test += make_network(switches[i], "switches", i)
+  end
+  
+  test+=make_virsh(tmp)
+
+	self.script=test
 end
 
 
 
 end
 
-def make_network(name = "deafult", bridge = "nat0", 
-				ip = "10.0.0.0", netmask = "255.255.255.0", 
-				dhcp = false, from = "10.0.0.1", to = "10.0.0.200" )
+def make_network(element, type,  index)
+  # set default values where needed :  
+  #     name = "deafult", bridge = "nat0", 
+  #     ip = "10.0.0.0", netmask = "255.255.255.0", 
+  #     dhcp = false, from = "10.0.0.1", to = "10.0.0.200"
+
 	dhcp_range = "";
-	if dhcp then 
+	if element["dhcp"] then 
 		dhcp_range = "
 \t\t<dhcp>
-\t\t\t<range start='#{from}' end='#{to}' />
+\t\t\t<range start='#{element["dhcpFrom"]}' end='#{element["dhcpTo"]}' />
 \t\t</dhcp>"
 	end
 
-	xml = "<network>
-\t<name>#{name}</name>
+	xml = "\ncat > $#{type.upcase}_XML[#{index}] << LOPP
+<network>
+\t<name>#{element["name"]}</name>
 \t<uuid>$(uuid)</uuid>
 \t<forward mode='nat'/>
-\t<bridge name='#{bridge}' stp='on' delay='0' />
-\t<ip address='#{ip}' netmask='#{netmask}'>#{dhcp_range}
+\t<bridge name='#{element["bridgeName"]}' stp='on' delay='0' />
+\t<ip address='#{element["ip"]}' netmask='#{element["netmask"]}'>#{dhcp_range}
 \t</ip>
-</network>"
+</network>
+LOPP
+"
 	return xml;
 end
 
-def make_guest()
-guest="<domain type='kvm'>
-  <name>fv0</name>
-  <uuid>$(uuid)</uuid>
-  <title>A short description - title - of the domain</title>
-  <description>Some human readable description</description>
-  <os>
-    <type machine='pc-0.12' arch='x86_64'>hvm</type>
-    <boot dev='hd'/>
-  </os>
-  <vcpu>1</vcpu> 
-  <memory unit='KiB'>524288</memory> 
-  <currentMemory unit='KiB'>524288</currentMemory> 
-  <on_poweroff>destroy</on_poweroff>
-  <on_reboot>restart</on_reboot>
-  <on_crash>restart</on_crash>
-  <features>
-     <pae/>
-     <acpi/>
-     <apic/>
-     <hap/>
-     <privnet/>
-     <hyperv>
-       <relaxed state='on'/>
-     </hyperv>
-   </features>
-  <clock offset='localtime'> 
-  </clock>
-  <devices>
-  	 <emulator>/usr/bin/kvm</emulator>
-  	 <disk device='disk' type='file'> 
-      	<driver name='qemu' type='qcow2'/>
-      	
-      	<source file='$IMAGE'/> 
-      	<target bus='virtio' dev='vda'/>
-      	<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x05'/>
-     </disk>
-     <disk device='cdrom' type='block'>
-      	<driver name='qemu' type='raw'/>
-      	<target bus='ide' dev='hdc'/>
-      	<readonly/>
-      	<address bus='1' type='drive' unit='0' controller='0'/>
-     </disk>
+def make_guest(element, index)
 
-     <controller type='ide' index='0'> 
-      	<address bus='0x00' domain='0x0000' type='pci' function='0x1' slot='0x01'/>
-     </controller>
+features = Hash.new
+features['pae']="\n\t\t<pae/>" if element["pae"]
+features['acpi']="\n\t\t<acpi/>" if element["acpi"]
+features['apic']="\n\t\t<apic/>" if element["apic"]
+features['hap']="\n\t\t<hap/>" if element["hap"]
+features['privnet']="\n\t\t<privnet/>" if element["privnet"]
+features['hyperv']="\n\t\t<hyperv>\n\t\t\t<relaxed state='on'/>\n\t\t<hyperv/>" if element["hyperv"]
 
-     <interface type='network'>
-      <source network='default'/> 
-      <target dev='vnet1'/> 
-     </interface>
+images ="";
 
-     <interface type='bridge'> 
-      <source bridge='br0'/>
-      <mac address='$MAC'/>
-      <model type='e1000'/>
-      <target dev='vnet1'/> 
-     </interface>
+guest="cat > $GUESTS_XML[#{index}] << LOPP
+<domain type='kvm'>
+\t<name>#{element["name"]}</name>
+\t<uuid>$(uuid)</uuid>
 
-     <input type='mouse' bus='usb'/>
+\t<os>
+\t\t<type machine='pc-0.12' arch='x86_64'>hvm</type>
+\t\t<boot dev='hd'/>
+\t</os>
 
-     <graphics port='-1' type='vnc' autoport='yes'> 
-         	<listen type='address' address='1.2.3.4'/>
-     </graphics> 
+\t<vcpu>#{element["cpu"]}</vcpu> 
+
+\t<memory unit='#{element["memory_unit"]}'>#{element["memory"]}</memory> 
+\t<currentMemory unit='#{element["memory_unit"]}'>#{element["current_memory"]}</currentMemory> 
+
+\t<on_poweroff>destroy</on_poweroff>
+\t<on_reboot>restart</on_reboot>
+\t<on_crash>restart</on_crash>
+
+\t<features>"
+  features.each do |k,feature|
+    guest+= feature
+  end
+  guest+="\n\t</features>
+
+\t<clock offset='localtime'></clock>
+
+\t<devices>
+
+\t\t<emulator>/usr/bin/kvm</emulator>"
+(0..element["disks"].length-1).each do |i|
+disk=element["disks"][i]
+disk["new_source"]=element['name']+i.to_s+".img"
+# make the image copy commands - ARE THERE ONLY *.img FILES?
+images+="j=$VIRT_DIR/#{disk["new_source"]}
+cp #{disk["source"]} $j
+chgrp libvirtd $j
+
+"
+
+# NB! use the new, copied locations
+guest+= "\n\t\t<disk device='#{disk["device"]}' type='#{disk["type"]}'> 
+\t\t\t<driver name='#{disk["driverName"]}' type='#{disk["driverType"]}'/>  	
+\t\t\t<source file='$VIRT_DIR/#{disk["new_source"]}'/> 
+\t\t\t<target bus='#{disk["targetBus"]}' dev='#{disk["targetDev"]}'/> 
+\t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x0#{5+i}'/>
+\t\t</disk>"
+
+
+
+end
+guest+="\n\t\t<disk device='cdrom' type='block'>
+\t\t\t<driver name='qemu' type='raw'/>
+\t\t\t<target bus='ide' dev='hdc'/>
+\t\t\t<readonly/>
+\t\t\t<address bus='1' type='drive' unit='0' controller='0'/>
+\t\t</disk>
+
+\t\t<controller type='ide' index='0'> 
+\t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x1' slot='0x01'/>
+\t\t</controller>
+
+\t\t<interface type='network'>
+\t\t\t<source network='default'/> 
+\t\t\t<target dev='vnet1'/> 
+\t\t</interface>
+
+\t\t<interface type='bridge'> 
+\t\t\t<source bridge='br0'/>
+\t\t\t<mac address='$MAC'/>
+\t\t\t<model type='e1000'/>
+\t\t\t<target dev='vnet1'/> 
+\t\t</interface>
+
+\t\t<input type='mouse' bus='usb'/>
+
+\t\t<graphics port='-1' type='vnc' autoport='yes'> 
+\t\t\t<listen type='address' address='1.2.3.4'/>
+\t\t</graphics> 
     
-     <sound model='ac97'> 
-      <address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x04'/>
-     </sound>
+\t\t<sound model='ac97'> 
+\t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x04'/>
+\t\t</sound>
     
-     <video>
-      <model type='cirrus' heads='1' vram='9216'/>
-      <address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x02'/>
-     </video>
+\t\t<video>
+\t\t\t<model type='cirrus' heads='1' vram='9216'/>
+\t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x02'/>
+\t\t</video>
 
-     <serial type='pty'>
-      	<target port='0'/>
-     </serial>
+\t\t<serial type='pty'>
+\t\t\t<target port='0'/>
+\t\t</serial>
     
-     <console type='pty'>
-      <target port='0' type='serial'/>
-     </console>
+\t\t<console type='pty'>
+\t\t\t<target port='0' type='serial'/>
+\t\t</console>
 
-  </devices>
+\t</devices>
 </domain>  
-  "
+LOPP 
+"
 
+return images+guest;
+end
+
+# make the start of the script, declaring values and checking for image existance
+def setup(all)
+  guests=all['nodes']
+  routers=all['routers']
+  switches=all['switches']
+
+  variables="\nVIRT_DIR = \"/var/lib/libvirt/images\"
+XML_DIR=\"/etc/libvirt/qemu/\"
+GUESTS_XML=("
+  # go trough all guests, get the images in an array while checking if they exist
+  script="\ndeclare -a disk_sources=("
+  (0..guests.length-1).each do |i|
+    element=guests[i]
+    # populate the guest xml array
+    variables+=" \"$XML_DIR#{element['name']}.xml\" "
+    (0..element["disks"].length-1).each do |j|
+        disk=element["disks"][j]
+        #populate the disk_sources array
+        script+=" \"#{disk["source"]}\" "
+    end
+  end
+  script +=")
+for img in ${disk_sources[@]}
+do
+\tif [ ! -f \"$img\" ]; then
+\t\techo \"Disk image file not located: $img\"
+\t\texit 2
+\tfi
+done
+# there were no missing images, define variables and make copies to the libvirt folder"
+
+  variables+=")
+ROUTERS_XML=("
+  (0..routers.length-1).each do |i|
+    element=routers[i]
+    #populate the networks_xml array
+    variables+=" \"$XML_DIR#{element['name']}.xml\" "
+  end
+  variables+=")
+SWITCHES_XML=("
+  (0..switches.length-1).each do |i|
+    element=switches[i]
+     variables+=" \"$XML_DIR#{element['name']}.xml\" "
+  end
+variables+=")\n\n"
+  return script+variables
+end
+
+def make_virsh(all)
+  guests=all['nodes']
+  routers=all['routers']
+  switches=all['switches']
+
+  virsh=""
+   (0..routers.length-1).each do |i|
+    virsh+="\nvirsh -c qemu:///system net-create $ROUTERS_XML[#{i}] ||  echo \"Creating instance '#{guests[i]['name']}' failed\" && exit 1"
+  end
+  (0..switches.length-1).each do |i|
+    virsh+="\nvirsh -c qemu:///system net-create $SWITCHES_XML[#{i}] ||  echo \"Creating instance '#{guests[i]['name']}' failed\" && exit 1"
+  end
+  (0..guests.length-1).each do |i|
+    virsh+="\nvirsh -c qemu:///system create $GUESTS_XML[#{i}] ||  echo \"Creating instance '#{guests[i]['name']}' failed\" && exit 1"
+  end
+ 
+
+  return virsh
 end

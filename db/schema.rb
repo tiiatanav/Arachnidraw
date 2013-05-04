@@ -10,7 +10,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130501170449) do
+ActiveRecord::Schema.define(:version => 20130503193632) do
 
   create_table "schemas", :force => true do |t|
     t.string   "name"
@@ -19,5 +19,7 @@ ActiveRecord::Schema.define(:version => 20130501170449) do
     t.datetime "created_at", :null => false
     t.datetime "updated_at", :null => false
   end
+
+  add_index "schemas", ["name"], :name => "index_schemas_on_name", :unique => true
 
 end
