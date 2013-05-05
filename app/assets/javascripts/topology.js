@@ -1,16 +1,3 @@
-/*Array.prototype.each = function(callback){
-    for (var i =  0; i < this.length; i++){
-        callback(i, this[i]);
-    }
-}
-Object.prototype.each = function(callback){
-  for(var prop in this) {
-      if(this.hasOwnProperty(prop)){ 
-        callback(prop, this[prop]);
-      }
-    } 
-}*/
-
 /*
 PRELOAD ALL IMAGES
 */
@@ -103,7 +90,7 @@ function Arrow(x1, y1, x2, y2){
 
  // default values 
  this.style = 0;
- this.ends = 1; 
+ this.ends = 0; 
  this.tip = 15;
  this.headAngle = Math.PI/8; 
  this.color="black";
@@ -339,12 +326,21 @@ function show_form(el, index){
    html.addInput(styleSection,'number','headAngle',this.headAngle.toFixed(2), Math.PI.toFixed(2), 0, 0.01); 
    
    options = app.getOptionsForSelect();
-
+   var forFrom={};
+   var forTo={};
+   /*only different kinds of elements can be connected*/
+   if (this.from instanceof Node){
+    forTo={'routers':options['routers'], "switches":options['switches']};
+    forFrom={'nodes':options['nodes']};
+   } else {
+    forTo={'nodes':options['nodes']};
+    forFrom={'routers':options['routers'], "switches":options['switches']};
+   }
    html.addLabel(endSection,'from', "From");
-   html.addNodeSelect(endSection,'from', this.from, options);
+   html.addNodeSelect(endSection,'from', this.from, forFrom);
    html.breakLine(endSection);
    html.addLabel(endSection,'to', "To");
-   html.addNodeSelect(endSection,'to', this.to, options);
+   html.addNodeSelect(endSection,'to', this.to, forTo);
 
 }
 
@@ -383,7 +379,7 @@ function show_form(el, index){
    // calculate distance 
    h=Math.abs(a*Math.sin(alpha2));
  
-// TODO! this will work on the extended arrow, need to limit it! ie with angles
+   // TODO! this will work on the extended arrow, need to limit it! ie with angles
    // return if the mouse is outside nodes and close enough to the arrow
    return h<min && bool && (beta>0 && alpha>0);
 
@@ -423,7 +419,6 @@ function show_form(el, index){
       if(this.hasOwnProperty(prop)){         
           if (typeof this[prop] != "function"){
             if (prop=="to" || prop=="from"){
-          
                 inf=json[prop].split('-');
                 this[prop]=app.getShape(inf[0], inf[1]);
               } else {
@@ -478,7 +473,7 @@ function Node(x, y, name, state){
  this.draggable = true; 
  this.editable = true;
 
- this.name = typeof(name)!='undefined'? name:"new Node"; 
+ this.name = typeof(name)!='undefined'? name:"newNode"; 
  this.cpu = 1;
  this.memory = 524288;
  this.current_memory = 524288;
@@ -497,13 +492,11 @@ function Node(x, y, name, state){
  this.acpi=true;
  this.apic=true;
  this.hap=true;
- this.privnet=true;
+ this.privnet=false;
  this.hyperv=false;
 
-this.networks = [];
-/* network name, target dev (how to name the network on the guest)*/
-this.bridges = [];
-/* bridge name, mac address, target dev */
+this.networks = []; // routers and switches
+this.bridges = []; // bridges on the host, allowing direct connection
 
 this.sections={ "styleSection":true, "nodeSection":true, 
                 "featureSection":true, "diskSection":true, 
@@ -517,8 +510,8 @@ this.defaults={"disks":{"device":"disk",
                 "targetBus":"virtio",
                 "targetDev":"vda"
               },
-              "networks":{"name":"internal1", "dev":"int1", "mac":""},
-              "bridges":{"name":"bridge1", "dev":"br1", "mac":""},
+              "networks":{"name":"internal", "dev":"int", "mac":""},
+              "bridges":{"name":"bridge", "dev":"br", "mac":""},
               "devs" : {"virtio":"vd", "ide":"hd", "scsi":"sd", "xen":"xvd", "usb":"sd", "sata":"sd"}
             };
  this.draw=draw;
@@ -600,9 +593,25 @@ function show_form(el, index){
    html.addLabel(styleSection,'border','Border width');
    html.addInput(styleSection,'number','border',this.border, 10,0);
 
+   // validate name, to not contain spaces and to be unique
+  
    html.addLabel(nodeSection, 'name','Name');
    html.addInput(nodeSection,'text','name',this.name);
    html.breakLine(nodeSection);
+   var names = app.getNames(["routers", "switches", "nodes"]);
+   count=0;
+   for (i=0; i<names.length; i++){
+    if (names[i]==this.name) count++;
+   }
+   if (count>1){
+    html.errorNotice(nodeSection, "Name in use, choose another one");
+    html.breakLine(nodeSection);
+   }
+   // there should not be whitespace in the names
+   if (this.name.indexOf(' ') >= 0){
+    html.errorNotice(nodeSection, "Names should not contain whitespaces");
+    html.breakLine(nodeSection);
+   }
    html.addLabel(nodeSection, 'cpu','CPUs');
    html.addInput(nodeSection,'number','cpu',this.cpu, 4, 1);
    html.breakLine(nodeSection);
@@ -665,26 +674,30 @@ function show_form(el, index){
     html.breakLine(diskSection);
 
 /* network name, target dev (how to name the network on the guest)*/
+/*
+  TODO: get the switches and routers this node is conneced to by arrows
+*/
     for(i=0;i<this.networks.length;i++){
+      var names = app.getNames(["routers", "switches"]);
+     
       html.addLabel(networkSection, 'name','Network');
-      html.addTextSelect(networkSection,'networks-name', "value", 
-        ["get from defined networks"], i);
+      html.addTextSelect(networkSection,'networks-name', this.networks[i].name, 
+        names, i);
       html.breakLine(networkSection);
       html.addLabel(networkSection, 'dev','Target dev');
       html.addSubInput(networkSection,'text','networks-dev',this.networks[i].dev, i );
       html.breakLine(networkSection);
       html.removeThis(networkSection, "networks", i);
       html.breakLine(networkSection);
-     html.hrLine(networkSection);
+      html.hrLine(networkSection);
     }
     html.addAnother(networkSection, "networks");
     html.breakLine(networkSection);
 
 /* bridge name, mac address, target dev */
     for(i=0;i<this.bridges.length;i++){
-        html.addLabel(bridgeSection, 'name','Bridge');
-        html.addTextSelect(bridgeSection,'bridges-name', "value", 
-        ["get from defined bridges"], i);
+        html.addLabel(bridgeSection, 'name','Bridge name');
+        html.addSubInput(bridgeSection,'text','bridges-name', this.bridges[i].name, i);
         html.breakLine(bridgeSection);
         html.addLabel(bridgeSection, 'dev','Target dev');
         html.addSubInput(bridgeSection,'text','bridges-dev',this.bridges[i].dev, i );
@@ -736,7 +749,7 @@ function show_form(el, index){
  this.toJSONstring=toJSONstring;
  function toJSONstring(){
     // some properites are supposed to be not exported as they should stay constant
-    var ignore=["width", 'height', 'draggable','editable', 'sections', 'defaults', ];
+    var ignore=["width", 'height', 'draggable','editable', 'sections', 'defaults' ];
     tmp="{  ";//\"type\" : \"Node\", \"id\" : "+app.getIndexOf(this)+", ";
     for(var prop in this) {
       if(this.hasOwnProperty(prop)){         
@@ -823,7 +836,7 @@ function Switch(x, y, name){
  this.x =  typeof(x)!='undefined'? x:1;
  this.y =  typeof(y)!='undefined'? y:1;
 
- this.name = typeof(name)!='undefined'? name:"new Switch"; 
+ this.name = typeof(name)!='undefined'? name:"newSwitch"; 
  this.bridgeName = "internal0";
  this.ip = "10.x.0.0";
  this.netmask = "255.255.255.0";
@@ -920,6 +933,20 @@ function show_form(el, index){
    html.addLabel(switchSection, 'name','Name');
    html.addInput(switchSection,'text','name',this.name);
    html.breakLine(switchSection);
+   var names = app.getNames(["routers", "switches", "nodes"]);
+   count=0;
+   for (i=0; i<names.length; i++){
+    if (names[i]==this.name) count++;
+   }
+   if (count>1){
+    html.errorNotice(switchSection, "Name in use, choose another one");
+    html.breakLine(switchSection);
+   }
+   // there should not be whitespace in the names
+   if (this.name.indexOf(' ') >= 0){
+    html.errorNotice(switchSection, "Names should not contain whitespaces");
+    html.breakLine(switchSection);
+   }
    html.addLabel(switchSection, 'bridgeName','Bridge name');
    html.addInput(switchSection,'text','bridgeName',this.bridgeName);
    html.breakLine(switchSection);
@@ -1029,7 +1056,7 @@ function Router(x, y, name){
  this.x =  typeof(x)!='undefined'? x:1;
  this.y =  typeof(y)!='undefined'? y:1;
  
- this.name = typeof(name)!='undefined'? name:"new Router"; 
+ this.name = typeof(name)!='undefined'? name:"newRouter"; 
  this.bridgeName = "nat0";
  this.ip = "10.0.x.0";
  this.netmask = "255.255.255.0";
@@ -1124,6 +1151,20 @@ function show_form(el, index){
    html.addLabel(routerSection, 'name','Name');
    html.addInput(routerSection,'text','name',this.name);
    html.breakLine(routerSection);
+   var names = app.getNames(["routers", "switches", "nodes"]);
+   count=0;
+   for (i=0; i<names.length; i++){
+    if (names[i]==this.name) count++;
+   }
+   if (count>1){
+    html.errorNotice(routerSection, "Name in use, choose another one");
+    html.breakLine(routerSection);
+   }
+   // there should not be whitespace in the names
+   if (this.name.indexOf(' ') >= 0){
+    html.errorNotice(routerSection, "Names should not contain whitespaces");
+    html.breakLine(routerSection);
+   }
    html.addLabel(routerSection, 'bridgeName','Bridge name');
    html.addInput(routerSection,'text','bridgeName',this.bridgeName);
    html.breakLine(routerSection);
@@ -1421,7 +1462,7 @@ function Menu(){
     }
   }, 
   'connect':{
-    'text':'Select two items to connect', 
+    'text':'Select two items to connect. NB! Can not connect elements of same type', 
     'type':"select2",
     'active':false,
     'x':245, 
@@ -1580,13 +1621,21 @@ function Menu(){
 
 
 function HTML() {
-  this.breakLine=breakLine;
- function breakLine(el){
+
+this.breakLine=breakLine;
+function breakLine(el){
   el.appendChild(document.createElement('br'));
 }
- this.hrLine=hrLine;
- function hrLine(el){
+this.hrLine=hrLine;
+function hrLine(el){
   el.appendChild(document.createElement('hr'));
+}
+this.errorNotice=errorNotice;
+function errorNotice(el, notice){
+  var error=document.createElement("span");
+  error.innerHTML=notice;
+  error.style.color="red";
+  el.appendChild(error);
 }
 
 this.addSection=addSection;
@@ -1865,8 +1914,9 @@ function addTextSelect(el, id, value, options, index) {
      key=document.getElementById('id').value;
       typ=document.getElementById('type').value;
       var inf=id.split('-');
+     
       temp=app.getShape(typ, parseInt(key));
-      if (inf.length>1){
+      if (inf.length > 1){  
         temp[inf[0]][index][inf[1]]=element.options[element.selectedIndex].value;
         temp.show_form(el.parentElement.parentElement, key); 
       } else { 
@@ -1923,7 +1973,15 @@ function addAnother(el, what){
     key=document.getElementById('id').value;
     typ=document.getElementById('type').value;
     temp=app.getShape(typ, parseInt(key));
-    temp[what].push(temp.defaults[what]);
+    //make a independent clone of the default
+    var def=temp.defaults[what];
+    var inf={};
+    for(var prop in def) {
+      if(def.hasOwnProperty(prop)){         
+        inf[prop]=def[prop]; 
+      }   
+   }
+    temp[what].push(inf);
     temp.show_form(el.parentElement.parentElement, key); 
     
   }

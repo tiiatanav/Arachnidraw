@@ -123,6 +123,32 @@ function load(){
 		});
 }
 
+this.validate=validate;
+function validate(json){
+	console.log(json);
+	var i;
+	/*
+TODO! validate json
+	*/
+
+ /* validate arrow ends  */
+ for (i=0; i<json['arrows'].length-1; i++){
+	var to = json['arrows'][i].to.split('-');
+	var from = json['arrows'][i].from.split('-');
+	//console.log(to, from);
+	var nets=["routers", "switches"];
+	if ( nets.indexOf(to[0])>=0 ) to[0]="network";
+	if ( nets.indexOf(from[0])>=0 ) from[0]="network";
+	// the elements are of different kind, it is ok to make the arrow
+	if (from[0]==to[0]){
+		// remove this arrow
+		json['arrows'].splice(i, 1);
+	}
+ }
+ console.log("new", json);
+ return json;
+}
+
 this.makeJSON=makeJSON;
 function makeJSON(){
 	var app = this;
@@ -186,7 +212,7 @@ function exportJSON(){
 this.importJSON=importJSON;
 function importJSON(text){
  shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};
- var json=JSON.parse(text);
+ var json=validate(JSON.parse(text));
 
  $.each(json, function(key,val){
 	for (i=0; i < val.length; i++) {
@@ -256,9 +282,9 @@ function removeAll(){
 		shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};
 		document.getElementById(targetElement).innerHTML="";
    } 
-   schemaName="";
-   schemaId="";
- drawScreen();
+   	this.schemaName="";
+   	this.schemaId="";
+ 	drawScreen();
 }
 
 this.getNode=getNode;
@@ -280,6 +306,18 @@ function getShapes(){
 	return shapes;
 }
 
+this.getNames=getNames;
+function getNames(types) {
+	var i;
+	var names=[];
+	for (i = 0; i < types.length; i++){
+  		var objects=shapes[types[i]];
+  		$.each(objects, function(key,val){
+  			names.push(val.name);
+  		});
+  	}
+  	return names;
+}
 
 this.getIndexOf=getIndexOf;
 function getIndexOf(el){
@@ -560,15 +598,24 @@ function menuHelper(evt){
 					// create a holder for the nodes with the currently selected object
 					// if there is no node holder OR when there are already 2 nodes selected
 					being_used.nodes=[being_dragged];
-					
 					being_dragged=null;
-
 				} else if (being_dragged!=being_used.nodes[0]){
-					//there is one node, add this one and connect them
-					being_used.nodes.push(being_dragged);
-					
-					being_used.drop(being_used.nodes[0],being_used.nodes[1]);
-					being_used.nodes=[];
+					/*
+				 		chek for no same-type connections
+					*/
+					var from=getIndexOf(being_used.nodes[0]);
+					var to=getIndexOf(being_dragged);
+					// routers and switches are both network elements
+					var nets=["routers", "switches"];
+					if ( nets.indexOf(to[0])>=0 ) to[0]="network";
+					if ( nets.indexOf(from[0])>=0 ) from[0]="network";
+					// the elements are of different kind
+					if (from[0]!=to[0]){ 
+						//there is one node, add this one and connect them
+						being_used.nodes.push(being_dragged);
+						being_used.drop(being_used.nodes[0],being_used.nodes[1]);
+						being_used.nodes=[];
+					}
 					being_dragged=null;
 				} else {
 					// the user clicked on the same thing, unselect

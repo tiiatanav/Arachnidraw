@@ -48,7 +48,7 @@ def make_network(element, type,  index)
 \t\t</dhcp>"
 	end
 
-	xml = "\ncat > $#{type.upcase}_XML[#{index}] << LOPP
+	xml = "\ncat > ${#{type.upcase}_XML[#{index}]} << LOPP
 <network>
 \t<name>#{element["name"]}</name>
 \t<uuid>$(uuid)</uuid>
@@ -75,7 +75,7 @@ def make_guest(element, index)
 
   images ="";
 
-  guest="cat > $GUESTS_XML[#{index}] << LOPP
+  guest="cat > ${GUESTS_XML[#{index}]} << LOPP
 <domain type='kvm'>
 \t<name>#{element["name"]}</name>
 \t<uuid>$(uuid)</uuid>
@@ -110,7 +110,7 @@ def make_guest(element, index)
     disk=element["disks"][i]
     disk["new_source"]=element['name']+i.to_s+".img"
     # make the image copy commands - ARE THERE ONLY *.img FILES?
-    images+="j=$VIRT_DIR/#{disk["new_source"]}
+    images+="j=${VIRT_DIR}/#{disk["new_source"]}
 cp #{disk["source"]} $j
 chgrp libvirtd $j
 
@@ -118,12 +118,12 @@ chgrp libvirtd $j
 # NB! use the new, copied locations
     guest+= "\n\t\t<disk device='#{disk["device"]}' type='#{disk["type"]}'> 
 \t\t\t<driver name='#{disk["driverName"]}' type='#{disk["driverType"]}'/>  	
-\t\t\t<source file='$VIRT_DIR/#{disk["new_source"]}'/> 
+\t\t\t<source file='${VIRT_DIR}/#{disk["new_source"]}'/> 
 \t\t\t<target bus='#{disk["targetBus"]}' dev='#{disk["targetDev"]}'/> 
 \t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x0#{5+i}'/>
 \t\t</disk>"
   end
-
+# NB! the CD drive hdc might conflict with the disk drives!
   guest+="\n\t\t<disk device='cdrom' type='block'>
 \t\t\t<driver name='qemu' type='raw'/>
 \t\t\t<target bus='ide' dev='hdc'/>
@@ -183,15 +183,17 @@ def setup(all)
   routers=all['routers']
   switches=all['switches']
 
-  variables="\nVIRT_DIR = \"/var/lib/libvirt/images\"
+  variables="\nVIRT_DIR=\"/var/lib/libvirt/images\"
 XML_DIR=\"/etc/libvirt/qemu/\"
 GUESTS_XML=("
   # go trough all guests and populate arrays
-  script="\ndeclare -a disk_sources=("
+  script="\n#!/bin/bash
+
+declare -a disk_sources=("
   (0..guests.length-1).each do |i|
     element=guests[i]
     # populate the guest xml array
-    variables+=" \"$XML_DIR#{element['name']}.xml\" "
+    variables+=" \"${XML_DIR}#{element['name']}.xml\" "
     (0..element["disks"].length-1).each do |j|
         disk=element["disks"][j]
         #populate the disk_sources array
@@ -214,13 +216,13 @@ ROUTERS_XML=("
   (0..routers.length-1).each do |i|
     element=routers[i]
     #populate the networks_xml array
-    variables+=" \"$XML_DIR#{element['name']}.xml\" "
+    variables+=" \"${XML_DIR}#{element['name']}.xml\" "
   end
   variables+=")
 SWITCHES_XML=("
   (0..switches.length-1).each do |i|
     element=switches[i]
-     variables+=" \"$XML_DIR#{element['name']}.xml\" "
+     variables+=" \"${XML_DIR}#{element['name']}.xml\" "
   end
 variables+=")\n\n"
   return script+variables
@@ -235,13 +237,22 @@ def make_virsh(all)
 
   virsh=""
    (0..routers.length-1).each do |i|
-    virsh+="\nvirsh -c qemu:///system net-create $ROUTERS_XML[#{i}] ||  echo \"Creating instance '#{routers[i]['name']}' failed\" && exit 1"
+    virsh+="\nvirsh -c qemu:///system net-create ${ROUTERS_XML[#{i}]} || {
+\techo \"Creating instance '#{routers[i]['name']}' failed\"
+\texit 1
+}"
   end
   (0..switches.length-1).each do |i|
-    virsh+="\nvirsh -c qemu:///system net-create $SWITCHES_XML[#{i}] ||  echo \"Creating instance '#{switches[i]['name']}' failed\" && exit 1"
+    virsh+="\nvirsh -c qemu:///system net-create ${SWITCHES_XML[#{i}]} ||  {
+\techo \"Creating instance '#{switches[i]['name']}' failed\"
+\texit 1
+}"
   end
   (0..guests.length-1).each do |i|
-    virsh+="\nvirsh -c qemu:///system create $GUESTS_XML[#{i}] ||  echo \"Creating instance '#{guests[i]['name']}' failed\" && exit 1"
+    virsh+="\nvirsh -c qemu:///system create ${GUESTS_XML[#{i}]} ||  {
+\techo \"Creating instance '#{guests[i]['name']}' failed\"
+\texit 1
+}"
   end
 
   return virsh
