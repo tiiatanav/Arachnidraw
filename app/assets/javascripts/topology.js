@@ -1276,14 +1276,28 @@ function Menu(){
       name.setAttribute("type","text");
       name.setAttribute("id", "schemaName");
       name.setAttribute("placeholder", "Schema name here");
+
       saveSection.appendChild(name);
 
       html.breakLine(saveSection);
 
       var submit = document.createElement("button");
-      submit.onclick=function(){app.save();};
+      submit.onclick=function(){app.save(true);};
       submit.innerHTML="Save";
       saveSection.appendChild(submit);
+
+      // add a change button that is hidden by default
+      var change = document.createElement("button");
+      change.onclick=function(){app.save(false);};
+      change.innerHTML="Update";
+      change.style.display="none";
+      saveSection.appendChild(change);
+
+      if (app.schemaName!="") {
+        change.style.display="inline-block";
+        name.setAttribute("value", app.schemaName);
+        submit.innerHTML="Save as";
+      }
 
       var info = document.createElement("p");
       info.setAttribute("id","saveInfo");

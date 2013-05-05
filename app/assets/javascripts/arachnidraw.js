@@ -67,16 +67,27 @@ var menuHeight=40;
 this.targetElement='formHolder';
 var targetElement = this.targetElement;
 var save_uri = "schemas.json";
+this.schemaId="";
+this.schemaName="";
 
 
 this.save=save;
-function save(){
-	$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}})
-	.done(function(data) {
-		$("#saveInfo").html("Save was successful").css("color","green");		
-	}).fail(function(data) { 
-		$("#saveInfo").html("Name in use, pick another one.").css("color","red");
-	});
+function save(create){
+	if (this.schemaId=="" || create){ // create a new schema
+		$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}})
+		.done(function(data) {
+			$("#saveInfo").html("Save was successful").css("color","green");		
+		}).fail(function(data) { 
+			$("#saveInfo").html("Name in use, pick another one.").css("color","red");
+		});
+	} else { // update existing schema
+		$.ajax({ 
+			url: save_uri.replace(".json","/"+this.schemaId+".json"), 
+			type: 'PUT', 
+			data: {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}} 
+		}).done(function() {$("#saveInfo").html("Update was successful").css("color","green"); })
+			.fail(function() {$("#saveInfo").html("Update failed.").css("color","red"); });
+	}
 	// hide message after a few seconds
 	setTimeout(function(){
 		$("#saveInfo").html("");
@@ -86,6 +97,7 @@ function save(){
 
 this.load=load;
 function load(){
+	var app = this;
 	var holder = document.getElementById(targetElement);
 	holder.innerHTML="";
 	var loadSection = html.addSection(holder,'loadSection', 'Open Schema', false);
@@ -93,11 +105,14 @@ function load(){
 	$.get(save_uri, {},
 		function(data){
 			$.each(data, function(key, val){
+				//console.log("open:",val.id, val.name);
 				var span = document.createElement("span");
 				span.innerHTML=val.name;
 				span.setAttribute("class", "loadSchema");
 				span.onclick=function(){
 					importJSON(val.json);
+					app.schemaName=val.name;
+					app.schemaId=val.id;
 					$(".loadedSchema").removeClass("loadedSchema");
 					this.setAttribute("class", "loadSchema loadedSchema");
 				}
@@ -241,6 +256,8 @@ function removeAll(){
 		shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};
 		document.getElementById(targetElement).innerHTML="";
    } 
+   schemaName="";
+   schemaId="";
  drawScreen();
 }
 

@@ -33,6 +33,7 @@ end
 
 end
 
+# make network devices
 def make_network(element, type,  index)
   # set default values where needed :  
   #     name = "deafult", bridge = "nat0", 
@@ -61,19 +62,20 @@ LOPP
 	return xml;
 end
 
+# make the guest xml and image copying
 def make_guest(element, index)
 
-features = Hash.new
-features['pae']="\n\t\t<pae/>" if element["pae"]
-features['acpi']="\n\t\t<acpi/>" if element["acpi"]
-features['apic']="\n\t\t<apic/>" if element["apic"]
-features['hap']="\n\t\t<hap/>" if element["hap"]
-features['privnet']="\n\t\t<privnet/>" if element["privnet"]
-features['hyperv']="\n\t\t<hyperv>\n\t\t\t<relaxed state='on'/>\n\t\t<hyperv/>" if element["hyperv"]
+  features = Hash.new
+  features['pae']="\n\t\t<pae/>" if element["pae"]
+  features['acpi']="\n\t\t<acpi/>" if element["acpi"]
+  features['apic']="\n\t\t<apic/>" if element["apic"]
+  features['hap']="\n\t\t<hap/>" if element["hap"]
+  features['privnet']="\n\t\t<privnet/>" if element["privnet"]
+  features['hyperv']="\n\t\t<hyperv>\n\t\t\t<relaxed state='on'/>\n\t\t<hyperv/>" if element["hyperv"]
 
-images ="";
+  images ="";
 
-guest="cat > $GUESTS_XML[#{index}] << LOPP
+  guest="cat > $GUESTS_XML[#{index}] << LOPP
 <domain type='kvm'>
 \t<name>#{element["name"]}</name>
 \t<uuid>$(uuid)</uuid>
@@ -103,28 +105,26 @@ guest="cat > $GUESTS_XML[#{index}] << LOPP
 \t<devices>
 
 \t\t<emulator>/usr/bin/kvm</emulator>"
-(0..element["disks"].length-1).each do |i|
-disk=element["disks"][i]
-disk["new_source"]=element['name']+i.to_s+".img"
-# make the image copy commands - ARE THERE ONLY *.img FILES?
-images+="j=$VIRT_DIR/#{disk["new_source"]}
+
+  (0..element["disks"].length-1).each do |i|
+    disk=element["disks"][i]
+    disk["new_source"]=element['name']+i.to_s+".img"
+    # make the image copy commands - ARE THERE ONLY *.img FILES?
+    images+="j=$VIRT_DIR/#{disk["new_source"]}
 cp #{disk["source"]} $j
 chgrp libvirtd $j
 
 "
-
 # NB! use the new, copied locations
-guest+= "\n\t\t<disk device='#{disk["device"]}' type='#{disk["type"]}'> 
+    guest+= "\n\t\t<disk device='#{disk["device"]}' type='#{disk["type"]}'> 
 \t\t\t<driver name='#{disk["driverName"]}' type='#{disk["driverType"]}'/>  	
 \t\t\t<source file='$VIRT_DIR/#{disk["new_source"]}'/> 
 \t\t\t<target bus='#{disk["targetBus"]}' dev='#{disk["targetDev"]}'/> 
 \t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x0#{5+i}'/>
 \t\t</disk>"
+  end
 
-
-
-end
-guest+="\n\t\t<disk device='cdrom' type='block'>
+  guest+="\n\t\t<disk device='cdrom' type='block'>
 \t\t\t<driver name='qemu' type='raw'/>
 \t\t\t<target bus='ide' dev='hdc'/>
 \t\t\t<readonly/>
@@ -174,8 +174,7 @@ guest+="\n\t\t<disk device='cdrom' type='block'>
 </domain>  
 LOPP 
 "
-
-return images+guest;
+  return images+guest;
 end
 
 # make the start of the script, declaring values and checking for image existance
@@ -187,7 +186,7 @@ def setup(all)
   variables="\nVIRT_DIR = \"/var/lib/libvirt/images\"
 XML_DIR=\"/etc/libvirt/qemu/\"
 GUESTS_XML=("
-  # go trough all guests, get the images in an array while checking if they exist
+  # go trough all guests and populate arrays
   script="\ndeclare -a disk_sources=("
   (0..guests.length-1).each do |i|
     element=guests[i]
@@ -199,6 +198,7 @@ GUESTS_XML=("
         script+=" \"#{disk["source"]}\" "
     end
   end
+  # check if all the images exist, if there is one missing, exit with a notice
   script +=")
 for img in ${disk_sources[@]}
 do
@@ -208,7 +208,7 @@ do
 \tfi
 done
 # there were no missing images, define variables and make copies to the libvirt folder"
-
+# populate other XML file arrays
   variables+=")
 ROUTERS_XML=("
   (0..routers.length-1).each do |i|
@@ -226,6 +226,8 @@ variables+=")\n\n"
   return script+variables
 end
 
+
+# create the virsh commnds to start the network
 def make_virsh(all)
   guests=all['nodes']
   routers=all['routers']
@@ -233,15 +235,14 @@ def make_virsh(all)
 
   virsh=""
    (0..routers.length-1).each do |i|
-    virsh+="\nvirsh -c qemu:///system net-create $ROUTERS_XML[#{i}] ||  echo \"Creating instance '#{guests[i]['name']}' failed\" && exit 1"
+    virsh+="\nvirsh -c qemu:///system net-create $ROUTERS_XML[#{i}] ||  echo \"Creating instance '#{routers[i]['name']}' failed\" && exit 1"
   end
   (0..switches.length-1).each do |i|
-    virsh+="\nvirsh -c qemu:///system net-create $SWITCHES_XML[#{i}] ||  echo \"Creating instance '#{guests[i]['name']}' failed\" && exit 1"
+    virsh+="\nvirsh -c qemu:///system net-create $SWITCHES_XML[#{i}] ||  echo \"Creating instance '#{switches[i]['name']}' failed\" && exit 1"
   end
   (0..guests.length-1).each do |i|
     virsh+="\nvirsh -c qemu:///system create $GUESTS_XML[#{i}] ||  echo \"Creating instance '#{guests[i]['name']}' failed\" && exit 1"
   end
- 
 
   return virsh
 end
