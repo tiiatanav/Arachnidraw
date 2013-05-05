@@ -402,7 +402,11 @@ function show_form(el, index){
                 var inf=app.getIndexOf(this[prop]);
                 tmp+="\n   \""+prop+"\" : \""+inf[0]+"-"+inf[1]+"\", ";
               } else if (typeof this[prop]=="number" || typeof this[prop]=="boolean"){
-                tmp+="\n   \""+prop+"\" : "+this[prop]+", ";
+                if (prop=="headAngle") {
+                  tmp+="\n   \""+prop+"\" : "+this[prop].toFixed(3)+", ";
+                }else {
+                    tmp+="\n   \""+prop+"\" : "+this[prop]+", ";
+                  }
               } else {
                 tmp+="\n   \""+prop+"\" : \""+this[prop]+"\", ";
               }
@@ -514,8 +518,9 @@ this.defaults={"disks":{"device":"disk",
                 "targetDev":"vda"
               },
               "networks":{"name":"internal1", "dev":"int1", "mac":""},
-              "bridges":{"name":"bridge1", "dev":"br1", "mac":""} };
-this.targetDevs={"virtio":"vd", "ide":"hd", "scsi":"sd", "xen":"xvd", "usb":"sd", "sata":"sd"}
+              "bridges":{"name":"bridge1", "dev":"br1", "mac":""},
+              "devs" : {"virtio":"vd", "ide":"hd", "scsi":"sd", "xen":"xvd", "usb":"sd", "sata":"sd"}
+            };
  this.draw=draw;
  function draw(ctx){
     var x = this.x;
@@ -583,8 +588,6 @@ function show_form(el, index){
    var styleSection = html.addSection(el,'styleSection', 'Style properties');
    var nodeSection = html.addSection(el,'nodeSection', 'Node properties');
 
-   
-
    var featureSection = html.addSection(el,'featureSection', 'Node Features');
   
    html.addLabel(styleSection, 'scale','Scale');
@@ -650,7 +653,7 @@ function show_form(el, index){
       html.breakLine(diskSection);
 
       // set target dev according to the target bus + letter
-      this.disks[i].targetDev=this.targetDevs[this.disks[i].targetBus]+alpha[i];
+      this.disks[i].targetDev = this.defaults['devs'][ this.disks[i].targetBus ] + alpha[i];
       html.addLabel(diskSection, 'targetDev','Target dev is <b>'+this.disks[i].targetDev+"</b>");
       html.breakLine(diskSection);
 
@@ -733,7 +736,7 @@ function show_form(el, index){
  this.toJSONstring=toJSONstring;
  function toJSONstring(){
     // some properites are supposed to be not exported as they should stay constant
-    var ignore=["width", 'height', 'draggable','editable', 'sections', 'defaults'];
+    var ignore=["width", 'height', 'draggable','editable', 'sections', 'defaults', ];
     tmp="{  ";//\"type\" : \"Node\", \"id\" : "+app.getIndexOf(this)+", ";
     for(var prop in this) {
       if(this.hasOwnProperty(prop)){         
