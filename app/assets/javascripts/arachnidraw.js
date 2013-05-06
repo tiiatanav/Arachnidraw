@@ -125,7 +125,6 @@ function load(){
 
 this.validate=validate;
 function validate(json){
-	console.log(json);
 	var i;
 	/*
 TODO! validate json
@@ -139,13 +138,13 @@ TODO! validate json
 	var nets=["routers", "switches"];
 	if ( nets.indexOf(to[0])>=0 ) to[0]="network";
 	if ( nets.indexOf(from[0])>=0 ) from[0]="network";
-	// the elements are of different kind, it is ok to make the arrow
+	// the elements are of same kind, it is ok to remove the arrow
 	if (from[0]==to[0]){
 		// remove this arrow
 		json['arrows'].splice(i, 1);
 	}
  }
- console.log("new", json);
+
  return json;
 }
 
@@ -213,6 +212,8 @@ this.importJSON=importJSON;
 function importJSON(text){
  shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};
  var json=validate(JSON.parse(text));
+	
+ json=updateArrows(json); 
 
  $.each(json, function(key,val){
 	for (i=0; i < val.length; i++) {
@@ -234,13 +235,37 @@ function importJSON(text){
   			add.fromJSON(val[i]);
   			shapes.routers.push(add);	
   		}
-
 	}
 });
+// every object exists now, get arrow names from nodes
 drawScreen();
- 
 }
 
+function updateArrows(json){
+// in the nodes, there is networks, that have the dev value for the arrow name
+// and the name for the object it is connected to
+	for (i=0; i<json.arrows.length; i++){
+		var to=json.arrows[i].to.split('-');
+		var from=json.arrows[i].from.split('-');
+
+		if (from[0]=="nodes"){
+			var name=json[to[0]][to[1]].name;
+			var networks=json.nodes[from[1]].networks;
+		} else if(to[0]=="nodes") {
+			var name=json[from[0]][from[1]].name;
+			var networks=json.nodes[to[1]].networks;
+		}
+		for (j=0; j<networks.length; j++){
+			if(networks[j].name==name){
+				//console.log(name, "network is",networks[j]);
+				json.arrows[i].name=networks[j].dev;
+				break;
+			}
+		}
+
+	}
+	return json;
+}
 
 this.add = add;
 function add(obj){
@@ -294,6 +319,17 @@ function getNode(id){
 this.getArrow=getArrow;
 function getArrow(id){
   return shapes.arrows[id];	
+}
+
+this.getArrows=getArrows;
+function getArrows(obj){
+  var connecting=[];
+ for (i=0;i<shapes.arrows.length;i++){
+ 	if (shapes.arrows[i].to==obj || shapes.arrows[i].from==obj){
+ 		connecting.push(shapes.arrows[i]);
+ 	}
+ }
+ return connecting;
 }
 
 this.getShape=getShape;

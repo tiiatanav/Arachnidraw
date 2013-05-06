@@ -97,8 +97,9 @@ function Arrow(x1, y1, x2, y2){
  this.line=1;
  this.draggable = false;
  this.editable = true;
-  this.sections={ "styleSection":true, "endSection":true};
+ this.sections={ "styleSection":true, "endSection":true};
 
+ this.name="dev0";
  this.from=null;
  this.to=null;
 
@@ -388,8 +389,7 @@ function show_form(el, index){
 
   this.toJSONstring=toJSON;
  function toJSON(){
-
-    var ignore = ['angle', 'draggable','editable', "x1", "y1", "x2","y2", "sections"];
+    var ignore = ['angle', 'draggable','editable', "x1", "y1", "x2","y2", "sections", 'name'];
     tmp="{ ";//\"type\" : \"Arrow\", \"id\" : "+app.getIndexOf(this)+", ";
     for(var prop in this) {
       if(this.hasOwnProperty(prop)){         
@@ -674,25 +674,26 @@ function show_form(el, index){
     html.breakLine(diskSection);
 
 /* network name, target dev (how to name the network on the guest)*/
-/*
-  TODO: get the switches and routers this node is conneced to by arrows
-*/
+
+  this.networks=app.getArrows(this);
     for(i=0;i<this.networks.length;i++){
-      var names = app.getNames(["routers", "switches"]);
-     
-      html.addLabel(networkSection, 'name','Network');
-      html.addTextSelect(networkSection,'networks-name', this.networks[i].name, 
-        names, i);
+      if (this.networks[i].to==this){
+        other=this.networks[i].from;
+      } else {
+        other=this.networks[i].to;
+      }
+    
+      html.addLabel(networkSection, 'name','connected to network: <b>'+other.name+'</b>');
       html.breakLine(networkSection);
       html.addLabel(networkSection, 'dev','Target dev');
-      html.addSubInput(networkSection,'text','networks-dev',this.networks[i].dev, i );
+      html.changeValue(networkSection, this.networks[i], 'name', this.networks[i].name, 'text');
       html.breakLine(networkSection);
-      html.removeThis(networkSection, "networks", i);
-      html.breakLine(networkSection);
+     /* html.removeThis(networkSection, "networks", i);
+      html.breakLine(networkSection);*/
       html.hrLine(networkSection);
     }
-    html.addAnother(networkSection, "networks");
-    html.breakLine(networkSection);
+    html.addLabel(networkSection, 'info','Add networks by connecting the node to routers or switches.');
+      html.breakLine(networkSection);
 
 /* bridge name, mac address, target dev */
     for(i=0;i<this.bridges.length;i++){
@@ -748,6 +749,17 @@ function show_form(el, index){
 */
  this.toJSONstring=toJSONstring;
  function toJSONstring(){
+      /* TODO! networks should be converted!
+      this is the last chance to change anything */
+      var networks=app.getArrows(this);
+      this.networks=[];
+      for (i=0;i<networks.length;i++){
+        if (networks[i].to==this){
+          this.networks.push({'name':networks[i].from.name, 'dev':networks[i].name});
+        } else {
+          this.networks.push({'name':networks[i].to.name, 'dev':networks[i].name});
+        }
+      }
     // some properites are supposed to be not exported as they should stay constant
     var ignore=["width", 'height', 'draggable','editable', 'sections', 'defaults' ];
     tmp="{  ";//\"type\" : \"Node\", \"id\" : "+app.getIndexOf(this)+", ";
@@ -757,6 +769,7 @@ function show_form(el, index){
               if(typeof this[prop]=="number" || typeof this[prop]=="boolean"){
                 tmp+="\n   \""+prop+"\" : "+this[prop]+", ";
               } else if (typeof this[prop]=="object"){
+
                 tmp+="\n   \""+prop+"\" : ["+toJSON(this[prop]).slice(0, -2)+"], ";
               }else {
                 tmp+="\n   \""+prop+"\" : \""+this[prop]+"\", ";
@@ -1766,6 +1779,31 @@ this.addSelect=addSelect;
     el.appendChild(element);
 }
 
+this.changeValue=changeValue;
+function changeValue(el, object, key, value, type){
+  type = typeof(type) != 'undefined'? type:"text";
+  var element=document.createElement('input');
+  element.setAttribute("type", type);
+  element.setAttribute("value", value);
+  element.onchange = function() { // alert(element.value);
+    index=document.getElementById('id').value;
+    typ=document.getElementById('type').value;
+    temp=app.getShape(typ, parseInt(index));
+
+    if (type=="number" || type=="range") {
+       object[key]=parseFloat(element.value);
+    } else {
+      object[key]=element.value;  
+    }
+     temp.show_form(el.parentElement.parentElement, index); 
+      // redraw the canvas to show changes
+      app.redraw();
+  };
+ 
+  el.appendChild(element);
+
+}
+
 this.addNodeSelect=addNodeSelect;
  function addNodeSelect(el, id, value, options) {
     var element = document.createElement("select");
@@ -1981,7 +2019,6 @@ function addAnother(el, what){
         inf[prop]=def[prop]; 
       }   
    }
-   console.log(temp[what])
     temp[what].push(inf);
     temp.show_form(el.parentElement.parentElement, key); 
     
