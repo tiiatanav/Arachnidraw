@@ -653,6 +653,10 @@ function show_form(el, index){
       html.addLabel(diskSection, 'source','Image');
       html.addSubInput(diskSection,'text','disks-source',this.disks[i].source, i );
       html.breakLine(diskSection);
+      if (this.disks[i].source.substring(0,1)!="/"){
+        html.errorNotice(diskSection, "Please supply an absolute path");
+        html.breakLine(diskSection);
+      }
 
       html.addLabel(diskSection, 'targetBus','Target bus');
       html.addTextSelect(diskSection,'disks-targetBus',this.disks[i].targetBus, 

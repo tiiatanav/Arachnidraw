@@ -73,9 +73,13 @@ this.schemaName="";
 
 this.save=save;
 function save(create){
+	var app = this;
 	if (this.schemaId=="" || create){ // create a new schema
 		$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}})
 		.done(function(data) {
+			//remember this save and let the user continue editing this
+			app.schemaName=data.name;
+			app.schemaId=data.id;
 			$("#saveInfo").html("Save was successful").css("color","green");		
 		}).fail(function(data) { 
 			$("#saveInfo").html("Name in use, pick another one.").css("color","red");
