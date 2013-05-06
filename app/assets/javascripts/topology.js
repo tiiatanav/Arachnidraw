@@ -380,7 +380,6 @@ function show_form(el, index){
    // calculate distance 
    h=Math.abs(a*Math.sin(alpha2));
  
-   // TODO! this will work on the extended arrow, need to limit it! ie with angles
    // return if the mouse is outside nodes and close enough to the arrow
    return h<min && bool && (beta>0 && alpha>0);
 
@@ -511,7 +510,8 @@ this.defaults={"disks":{"device":"disk",
                 "targetDev":"vda"
               },
               "networks":{"name":"internal", "dev":"int", "mac":""},
-              "bridges":{"name":"bridge", "dev":"br", "mac":""},
+              "bridges":{"name":"bridge", "dev":"br", "hasMac":"dynamic", "mac":""},
+              "macStates":["dynamic","static","ask"],
               "devs" : {"virtio":"vd", "ide":"hd", "scsi":"sd", "xen":"xvd", "usb":"sd", "sata":"sd"}
             };
  this.draw=draw;
@@ -561,8 +561,6 @@ this.defaults={"disks":{"device":"disk",
           } 
       }   
    }
-   // TODO: add properties assignment when properties are set
-
    return newobj;
 
  }
@@ -703,6 +701,17 @@ function show_form(el, index){
         html.addLabel(bridgeSection, 'dev','Target dev');
         html.addSubInput(bridgeSection,'text','bridges-dev',this.bridges[i].dev, i );
         html.breakLine(bridgeSection);
+      
+        html.addLabel(bridgeSection, 'hasMac','Assigning MAC');
+        html.addTextSelect(bridgeSection,'bridges-hasMac',this.bridges[i].hasMac, 
+        this.defaults['macStates'], i);
+        html.breakLine(bridgeSection);
+        if(this.bridges[i].hasMac=="static"){
+          html.addLabel(bridgeSection, 'mac','MAC');
+          html.addSubInput(bridgeSection,'text','bridges-mac',this.bridges[i].mac, i );
+          html.breakLine(bridgeSection);
+        }
+
         html.removeThis(bridgeSection, "bridges", i);
         html.breakLine(bridgeSection);
         html.hrLine(bridgeSection);
@@ -749,8 +758,7 @@ function show_form(el, index){
 */
  this.toJSONstring=toJSONstring;
  function toJSONstring(){
-      /* TODO! networks should be converted!
-      this is the last chance to change anything */
+      /* arrows to network notation */
       var networks=app.getArrows(this);
       this.networks=[];
       for (i=0;i<networks.length;i++){
@@ -913,7 +921,6 @@ this.sections={ "styleSection":true, "switchSection":true,
           } 
       }   
    }
-   // TODO: add properties assignment when properties are set
 
    return newobj;
 
@@ -1132,8 +1139,7 @@ function Router(x, y, name){
           } 
       }   
    }
-   // TODO: add properties assignment when properties are set
-
+ 
    return newobj;
 
  }
@@ -1588,7 +1594,7 @@ function Menu(){
  
 
  function draw(item, ctx){
-   // TODO: menu highlighting broken!
+  
       var x = item.x;
       var y = item.y;
       var height = item.height;

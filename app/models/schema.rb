@@ -134,19 +134,34 @@ chgrp libvirtd $j
 \t\t<controller type='ide' index='0'> 
 \t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x1' slot='0x01'/>
 \t\t</controller>
-
-\t\t<interface type='network'>
-\t\t\t<source network='default'/> 
-\t\t\t<target dev='vnet1'/> 
+"
+(0..element["networks"].length-1).each do |i|
+  net=element["networks"][i];
+  guest+="\n\t\t<interface type='network'>
+\t\t\t<source network='#{net['name']}'/> 
+\t\t\t<target dev='#{net['dev']}'/> 
 \t\t</interface>
-
-\t\t<interface type='bridge'> 
-\t\t\t<source bridge='br0'/>
-\t\t\t<mac address='$MAC'/>
+"
+end
+askfor=""
+(0..element["bridges"].length-1).each do |i|
+  bridge=element["bridges"][i];
+  mac=""
+  if bridge['hasMac']=="static" && bridge['mac']!="" then
+    mac="\n\t\t\t<mac address='#{bridge['mac']}'/>"
+  elsif bridge['hasMac']=="ask" then
+    askfor+="echo \"Please give the MAC aadress for bridge: #{bridge['name']} @ #{bridge['dev']}\"
+read ${MAC[#{i}]}\n" 
+    mac="\n\t\t\t<mac address='${MAC[#{i}]}'/>"
+  end
+  guest+="\n\t\t<interface type='bridge'> 
+\t\t\t<source bridge='#{bridge['name']}'/>
 \t\t\t<model type='e1000'/>
-\t\t\t<target dev='vnet1'/> 
+\t\t\t<target dev='#{bridge['dev']}'/>#{mac} 
 \t\t</interface>
-
+"
+end
+guest+="
 \t\t<input type='mouse' bus='usb'/>
 
 \t\t<graphics port='-1' type='vnc' autoport='yes'> 
@@ -174,7 +189,7 @@ chgrp libvirtd $j
 </domain>  
 LOPP 
 "
-  return images+guest;
+  return images+askfor+guest;
 end
 
 # make the start of the script, declaring values and checking for image existance
