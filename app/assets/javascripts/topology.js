@@ -495,8 +495,8 @@ function Node(x, y, name, state){
  this.privnet=false;
  this.hyperv=false;
 
-this.networks = []; // routers and switches
-this.bridges = []; // bridges on the host, allowing direct connection
+this.networks = new Array(); // routers and switches
+this.bridges = new Array(); // bridges on the host, allowing direct connection
 
 this.sections={ "styleSection":true, "nodeSection":true, 
                 "featureSection":true, "diskSection":true, 
@@ -756,7 +756,7 @@ function show_form(el, index){
           if (typeof this[prop] != "function" && ignore.indexOf(prop) < 0){
               if(typeof this[prop]=="number" || typeof this[prop]=="boolean"){
                 tmp+="\n   \""+prop+"\" : "+this[prop]+", ";
-              } else if (typeof this[prop]=="object" && this[prop].length>0){
+              } else if (typeof this[prop]=="object"){
                 tmp+="\n   \""+prop+"\" : ["+toJSON(this[prop]).slice(0, -2)+"], ";
               }else {
                 tmp+="\n   \""+prop+"\" : \""+this[prop]+"\", ";
@@ -1981,6 +1981,7 @@ function addAnother(el, what){
         inf[prop]=def[prop]; 
       }   
    }
+   console.log(temp[what])
     temp[what].push(inf);
     temp.show_form(el.parentElement.parentElement, key); 
     
