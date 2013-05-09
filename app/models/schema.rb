@@ -52,7 +52,7 @@ def make_network(element, type,  index)
 <network>
 \t<name>#{element["name"]}</name>
 \t<uuid>$(uuid)</uuid>
-\t<forward mode='nat'/>
+\t<forward mode='#{element['forward']}'/>
 \t<bridge name='#{element["bridgeName"]}' stp='on' delay='0' />
 \t<ip address='#{element["ip"]}' netmask='#{element["netmask"]}'>#{dhcp_range}
 \t</ip>
@@ -87,8 +87,8 @@ def make_guest(element, index)
 
 \t<vcpu>#{element["cpu"]}</vcpu> 
 
-\t<memory unit='#{element["memory_unit"]}'>#{element["memory"]}</memory> 
-\t<currentMemory unit='#{element["memory_unit"]}'>#{element["current_memory"]}</currentMemory> 
+\t<memory unit='#{element["memoryUnit"]}'>#{element["memory"]}</memory> 
+\t<currentMemory unit='#{element["memoryUnit"]}'>#{element["currentMemory"]}</currentMemory> 
 
 \t<on_poweroff>destroy</on_poweroff>
 \t<on_reboot>restart</on_reboot>

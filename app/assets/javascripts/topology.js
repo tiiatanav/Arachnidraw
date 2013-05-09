@@ -153,7 +153,7 @@ this.connect=connect;
    this.y1=Math.floor(from.y1);
    this.x2=Math.floor(to.x1);
    this.y2=Math.floor(to.y1);
- }
+   }
 
  function calcEdge(obj1, obj2, line){
     line=typeof(line)!='undefined'? line:0;
@@ -226,7 +226,7 @@ function drawLine(a, ctx){
  ctx.lineTo(a.x2, a.y2);
  ctx.stroke();
 
-}
+ }
 
 function calcEnd(a, ctx){
  // calculate the angle of the line 
@@ -338,10 +338,10 @@ function show_form(el, index){
     forFrom={'routers':options['routers'], "switches":options['switches']};
    }
    html.addLabel(endSection,'from', "From");
-   html.addNodeSelect(endSection,'from', this.from, forFrom);
+   html.addObjecSelect(endSection,'from', this.from, forFrom);
    html.breakLine(endSection);
    html.addLabel(endSection,'to', "To");
-   html.addNodeSelect(endSection,'to', this.to, forTo);
+   html.addObjecSelect(endSection,'to', this.to, forTo);
 
 }
 
@@ -475,8 +475,8 @@ function Node(x, y, name, state){
  this.name = typeof(name)!='undefined'? name:"newNode"; 
  this.cpu = 1;
  this.memory = 524288;
- this.current_memory = 524288;
- this.memory_unit="KiB"; 
+ this.currentMemory = 524288;
+ this.memoryUnit="KiB"; 
 
  this.disks = [{"device":"disk", 
                 "type":"file", 
@@ -552,7 +552,7 @@ this.defaults={"disks":{"device":"disk",
  } 
  this.copy=copy;
  function copy(){
-   var newobj = new Node(this.x, this.y, this.name+" (copy)");
+   var newobj = new Node(this.x, this.y, this.name+"Copy");
 
    for(var prop in newobj) {
       if(newobj.hasOwnProperty(prop)){         
@@ -615,13 +615,13 @@ function show_form(el, index){
    html.breakLine(nodeSection);
    html.addLabel(nodeSection, 'memory','Max memory');
    html.addInput(nodeSection,'text','memory',this.memory);
-   html.addTextSelect(nodeSection,'memory_unit',this.memory_unit, 
+   html.addTextSelect(nodeSection,'memoryUnit',this.memoryUnit, 
                       ["b", "KB", "KiB", "MB", "MiB", "GB", "GiB", "TB", "TiB"]);
    html.breakLine(nodeSection);
    // validate memory
-   if (this.memory<this.current_memory) this.current_memory=this.memory;
-   html.addLabel(nodeSection, 'current_memory','Current memory');
-   html.addInput(nodeSection,'number','current_memory',this.current_memory, this.memory, 1);
+   if (this.memory<this.currentMemory) this.currentMemory=this.memory;
+   html.addLabel(nodeSection, 'currentMemory','Current memory');
+   html.addInput(nodeSection,'number','currentMemory',this.currentMemory, this.memory, 1);
    html.breakLine(nodeSection);
 
    var diskSection = html.addSection(nodeSection,'diskSection', 'Disks');
@@ -830,258 +830,17 @@ function toJSON(obj){
 }
 
 
-/* 
-SWITCH OBJECT
 
- s1 = new Switch(x, y, name);
-
- draw the switch, needs the context
- s1.draw(ctx)
-
- show a form to edit parameters in the specified element
- s1.show_form(el) 
-
- to check if a point is over the node
- s1.hover(x,y)
-
- to make a clone of the switch (returns new)
- copy = s1.copy();
-
- to export the object in JSON
- json = s1.toJSONstring()
-
- to set instance values based on JSON
- new.fromJSON(jsonSource);
-
-*/
-
-function Switch(x, y, name){
- 
- // properties needed for drawing
- this.x =  typeof(x)!='undefined'? x:1;
- this.y =  typeof(y)!='undefined'? y:1;
-
- this.name = typeof(name)!='undefined'? name:"newSwitch"; 
- this.bridgeName = "internal0";
- this.ip = "10.x.0.0";
- this.netmask = "255.255.255.0";
- this.dhcp = false;
- this.dhcpFrom = "10.x.0.100";
- this.dhcpTo = "10.x.0.200";
-
- this.height = 45;
- this.width = 80;
- this.scale = 100;
- this.color = "black";
- this.border = 0; // can add borders if need be
- 
- this.draggable = true; 
- this.editable = true;
-
-
-this.sections={ "styleSection":true, "switchSection":true, 
-                "dhcpSection":true};
-
- this.draw=draw;
- function draw(ctx){
-    var x=this.x;
-    var y=this.y;
-    var width=this.width*(this.scale/100);
-    var height=this.height*(this.scale/100);
-
-   var prev = [ctx.strokeStyle, ctx.lineWidth, ctx.fillStyle]; // save previous
-   
-   ctx.strokeStyle = this.color; // use this object color
-   ctx.lineWidth = this.border;   
-   ctx.fillStyle = this.color;
-   
-   if (this.border>0){
-      // draw the object with outlines
-      ctx.strokeRect(this.x, this.y, width, height);
-   } 
-   // add the name
-   if (typeof(this.name)!="undefined"){
-      ctx.font="12px Arial"
-      ctx.textAlign = "center"; 
-      ctx.textBaseline = "top"; 
-      ctx.fillText(this.name, x+width/2, y+height+this.border/2);
-   }
-    
-    var ex = images.switches[0];
-    ctx.drawImage(ex, x, y, width, height);
-
-   ctx.strokeStyle = prev[0]; // restore previous
-   ctx.lineWidth = prev[1];
-   ctx.fillStyle = prev[2];
- } 
- this.copy=copy;
- function copy(){
-   var newobj = new Switch(this.x, this.y, this.name+" (copy)");
-
-   for(var prop in newobj) {
-      if(newobj.hasOwnProperty(prop)){         
-          if (typeof newobj[prop] != "function" && prop!="name"){
-              newobj[prop]=this[prop];
-          } 
-      }   
-   }
-
-   return newobj;
-
- }
-/*
-  show the form inside the given element
-*/
-
- this.show_form=show_form;
-function show_form(el, index){
-    el.innerHTML="";
-   // to track the id
-   html.addInput(el,'hidden','id',index);
-   html.addInput(el,'hidden','type',"switches");
-
-   var styleSection = html.addSection(el,'styleSection', 'Style properties');
-   var switchSection = html.addSection(el,'switchSection', 'Switch properties');
-   var dhcpSection = html.addSection(el,'dhcpSection', 'DHCP properties');
-  
-   html.addLabel(styleSection, 'scale','Scale');
-   html.addInput(styleSection,'range','scale',this.scale,100,25,1);
-   html.breakLine(styleSection);
-   html.addLabel(styleSection,'color','Color');
-   html.addInput(styleSection,'color','color',this.color);
-   html.breakLine(styleSection);
-   html.addLabel(styleSection,'border','Border width');
-   html.addInput(styleSection,'number','border',this.border, 10,0);
- 
-
-   html.addLabel(switchSection, 'name','Name');
-   html.addInput(switchSection,'text','name',this.name);
-   html.breakLine(switchSection);
-   var names = app.getNames(["routers", "switches", "nodes"]);
-   count=0;
-   for (i=0; i<names.length; i++){
-    if (names[i]==this.name) count++;
-   }
-   if (count>1){
-    html.errorNotice(switchSection, "Name in use, choose another one");
-    html.breakLine(switchSection);
-   }
-   // there should not be whitespace in the names
-   if (this.name.indexOf(' ') >= 0){
-    html.errorNotice(switchSection, "Names should not contain whitespaces");
-    html.breakLine(switchSection);
-   }
-   html.addLabel(switchSection, 'bridgeName','Bridge name');
-   html.addInput(switchSection,'text','bridgeName',this.bridgeName);
-   html.breakLine(switchSection);
-   html.addLabel(switchSection, 'ip','IP address');
-   html.addIP(switchSection,'ip',this.ip);
-   html.breakLine(switchSection);
-   html.addLabel(switchSection, 'netmask','Netmask');
-   html.addIP(switchSection,'netmask',this.netmask);
-   html.breakLine(switchSection);
-   html.addLabel(dhcpSection, 'dhcp','DHCP enabled?');
-   html.addBool(dhcpSection,'dhcp',this.dhcp);
-   html.breakLine(dhcpSection);
-   if (this.dhcp){
-    html.addLabel(dhcpSection, 'dhcpFrom','From');
-    html.addIP(dhcpSection,'dhcpFrom',this.dhcpFrom);
-    html.breakLine(dhcpSection);
-    html.addLabel(dhcpSection, 'dhcpTo','To');
-    html.addIP(dhcpSection,'dhcpTo',this.dhcpTo);
-    html.breakLine(dhcpSection);
-   }
-}
-
-/*
-  are the given coordinates on this node?
-*/
-
- this.hover = hover;
-  function hover(x,y){
-   dx = x - this.x;
-   dy = y - this.y;
- 
-    return (dx>=0 && dx<=this.width*(this.scale/100) && dy>=0 && dy<=this.height*(this.scale/100));
- }
-
-/*
-  convert this to JSON sting
-*/
- this.toJSONstring=toJSONstring;
- function toJSONstring(){
-    // some properites are supposed to be not exported as they should stay constant
-    var ignore=["width", 'height', 'draggable','editable', 'sections'];
-    if (!this.dhcp) {
-      // if no dhcp is set to flase, then dont export the ip ranges
-      ignore.push("dhcpFrom");
-      ignore.push("dhcpTo");
-    }
-    tmp="{";//\"type\" : \"Node\", \"id\" : "+app.getIndexOf(this)+", ";
-    for(var prop in this) {
-      if(this.hasOwnProperty(prop)){         
-          if (typeof this[prop] != "function" && ignore.indexOf(prop) < 0){
-              if(typeof this[prop]=="number" || typeof this[prop]=="boolean"){
-                tmp+="\n   \""+prop+"\" : "+this[prop]+", ";
-              } else {
-                tmp+="\n   \""+prop+"\" : \""+this[prop]+"\", ";
-              }
-          } 
-      }   
-   }
-   tmp = tmp.slice(0, -2);
-   return tmp+"\n}";
- }
-/*
-  import info from JSON obj
-*/
- this.fromJSON=fromJSON;
- function fromJSON(json){
-    for(var prop in json) {
-      if(this.hasOwnProperty(prop)){         
-          if (typeof this[prop] != "function"){
-              this[prop]=json[prop];
-          } 
-      }   
-   }
- }
-
-   
-}
-
-/* 
-ROUTER OBJECT
-
- r1 = new Router(x, y, name);
-
- draw the switch, needs the context
- r1.draw(ctx)
-
- show a form to edit parameters in the specified element
- r1.show_form(el) 
-
- to check if a point is over the node
- r1.hover(x,y)
-
- to make a clone of the switch (returns new)
- copy = r1.copy();
-
- to export the object in JSON
- json = r1.toJSONstring()
-
- to set instance values based on JSON
- new.fromJSON(jsonSource);
-
-*/
-
-function Router(x, y, name){
- 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+function Network(x, y, type,  name){
+ this.type = typeof(type)!="undefined"? type:"Router";
  // properties needed for drawing
  this.x =  typeof(x)!='undefined'? x:1;
  this.y =  typeof(y)!='undefined'? y:1;
  
- this.name = typeof(name)!='undefined'? name:"newRouter"; 
+ this.name = typeof(name)!='undefined'? name:"new"+this.type; 
  this.bridgeName = "nat0";
+ this.forward = "nat";
  this.ip = "10.0.x.0";
  this.netmask = "255.255.255.0";
  this.dhcp = true;
@@ -1096,7 +855,7 @@ function Router(x, y, name){
  
  this.draggable = true; 
  this.editable = true;
- this.sections={ "styleSection":true, "routerSection":true, 
+ this.sections={ "styleSection":true, "networkSection":true, 
                 "dhcpSection":true};
 
  this.draw=draw;
@@ -1123,8 +882,8 @@ function Router(x, y, name){
       ctx.textBaseline = "top"; 
       ctx.fillText(this.name, x+width/2, y+height+this.border/2);
    }
-    
-    var ex = images.routers[0];
+    var img={"Router":images.routers[0], "Switch":images.switches[0]};
+    var ex = img[this.type];
     ctx.drawImage(ex, x, y, width, height);
 
    ctx.strokeStyle = prev[0]; // restore previous
@@ -1134,7 +893,7 @@ function Router(x, y, name){
 
  this.copy=copy;
  function copy(){
-   var newobj = new Router(this.x, this.y, this.name+" (copy)");
+   var newobj = new Network(this.x, this.y, this.type, this.name+"Copy");
 
    for(var prop in newobj) {
       if(newobj.hasOwnProperty(prop)){         
@@ -1156,10 +915,11 @@ function show_form(el, index){
     el.innerHTML="";
    // to track the id
    html.addInput(el,'hidden','id',index);
-   html.addInput(el,'hidden','type',"routers");
+   var types={"Router":"routers", "Switch":"switches"};
+   html.addInput(el,'hidden','type', types[this.type]);
 
    var styleSection = html.addSection(el,'styleSection', 'Style properties');
-   var routerSection = html.addSection(el,'routerSection', 'Router properties');
+   var networkSection = html.addSection(el,'networkSection', this.type+' properties');
    var dhcpSection = html.addSection(el,'dhcpSection', 'DHCP properties');
   
    html.addLabel(styleSection, 'scale','Scale');
@@ -1171,32 +931,37 @@ function show_form(el, index){
    html.addLabel(styleSection,'border','Border width');
    html.addInput(styleSection,'number','border',this.border, 10,0);
 
-   html.addLabel(routerSection, 'name','Name');
-   html.addInput(routerSection,'text','name',this.name);
-   html.breakLine(routerSection);
+   html.addLabel(networkSection, 'name','Name');
+   html.addInput(networkSection,'text','name',this.name);
+   html.breakLine(networkSection);
    var names = app.getNames(["routers", "switches", "nodes"]);
    count=0;
    for (i=0; i<names.length; i++){
     if (names[i]==this.name) count++;
    }
    if (count>1){
-    html.errorNotice(routerSection, "Name in use, choose another one");
-    html.breakLine(routerSection);
+    html.errorNotice(networkSection, "Name in use, choose another one");
+    html.breakLine(networkSection);
    }
    // there should not be whitespace in the names
    if (this.name.indexOf(' ') >= 0){
-    html.errorNotice(routerSection, "Names should not contain whitespaces");
-    html.breakLine(routerSection);
+    html.errorNotice(networkSection, "Names should not contain whitespaces");
+    html.breakLine(networkSection);
    }
-   html.addLabel(routerSection, 'bridgeName','Bridge name');
-   html.addInput(routerSection,'text','bridgeName',this.bridgeName);
-   html.breakLine(routerSection);
-   html.addLabel(routerSection, 'ip','IP address');
-   html.addIP(routerSection,'ip',this.ip);
-   html.breakLine(routerSection);
-   html.addLabel(routerSection, 'netmask','Netmask');
-   html.addIP(routerSection,'netmask',this.netmask);
-   html.breakLine(routerSection);
+   html.addLabel(networkSection, 'bridgeName','Bridge name');
+   html.addInput(networkSection,'text','bridgeName',this.bridgeName);
+   html.breakLine(networkSection);
+   html.addLabel(networkSection, 'forward','Forward mode');
+   html.addTextSelect(networkSection,'forward',this.forward, 
+                      ["nat", "route", "bridge", "private", "vepa", "passthrough", "hostdev"]);
+   html.breakLine(networkSection);
+
+   html.addLabel(networkSection, 'ip','IP address');
+   html.addIP(networkSection,'ip',this.ip);
+   html.breakLine(networkSection);
+   html.addLabel(networkSection, 'netmask','Netmask');
+   html.addIP(networkSection,'netmask',this.netmask);
+   html.breakLine(networkSection);
     html.addLabel(dhcpSection, 'dhcp','DHCP enabled?');
    html.addBool(dhcpSection,'dhcp',this.dhcp);
    html.breakLine(dhcpSection);
@@ -1228,7 +993,7 @@ function show_form(el, index){
  this.toJSONstring=toJSONstring;
  function toJSONstring(){
     // some properites are supposed to be not exported as they should stay constant
-    var ignore=["width", 'height', 'draggable','editable', 'sections'];
+    var ignore=["width", 'height', 'draggable','editable', 'sections', 'type'];
     if (!this.dhcp) {
       // if no dhcp is set to flase, then dont export the ip ranges
       ignore.push("dhcpFrom");
@@ -1265,6 +1030,10 @@ function show_form(el, index){
 
    
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 /*
 The menu object
@@ -1444,7 +1213,7 @@ function Menu(){
        this.drop(x,y);
     },
     'drop':function(x,y){
-       tmp = new Router(Math.floor(x), Math.floor(y));
+       tmp = new Network(Math.floor(x), Math.floor(y), "Router");
        app.add(tmp);
     },
     'draw':function(ctx){
@@ -1471,7 +1240,7 @@ function Menu(){
        this.drop(x,y);
     },
     'drop':function(x,y){
-       tmp = new Switch(Math.floor(x), Math.floor(y));
+       tmp = new Network(Math.floor(x), Math.floor(y), "Switch");
        app.add(tmp);
     },
     'draw':function(ctx){
@@ -1638,7 +1407,7 @@ function Menu(){
 
    to add a select box, that chooses between node objects (ie for arrow to and from parameters) 
    where options is a array of [id, name] arrays 
-   html.addNodeSelect(parent, id, value, options)
+   html.addObjecSelect(parent, id, value, options)
 
 */
 
@@ -1814,8 +1583,8 @@ function changeValue(el, object, key, value, type){
 
 }
 
-this.addNodeSelect=addNodeSelect;
- function addNodeSelect(el, id, value, options) {
+this.addObjecSelect=addObjecSelect;
+ function addObjecSelect(el, id, value, options) {
     var element = document.createElement("select");
     //Assign different attributes to the element.
     var index=app.getIndexOf(value);
@@ -1912,6 +1681,7 @@ function addIP(el, id, value){
         tmp.value=parseInt(tmp.value);
         if (tmp.value>255) tmp.value=255;
         if (tmp.value.toString()=="NaN") tmp.value=0;
+        // TODO the last has to be between 0 and 255 non-inclusive
         newvalue += tmp.value+".";
       } 
      

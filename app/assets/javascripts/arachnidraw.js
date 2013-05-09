@@ -170,9 +170,9 @@ function makeJSON(){
   				arrows+="\n"+val[i].toJSONstring()+", ";
   			} else if (val[i] instanceof Node){
   				nodes+="\n"+val[i].toJSONstring()+", ";
-  			} else if (val[i] instanceof Switch){
+  			} else if (val[i] instanceof Network && val[i].type=="Switch"){
   				switches+="\n"+val[i].toJSONstring()+", ";
-  			} else if (val[i] instanceof Router){
+  			} else if (val[i] instanceof Network && val[i].type=="Router"){
   				routers+="\n"+val[i].toJSONstring()+", ";
   			}
 		}
@@ -231,11 +231,11 @@ function importJSON(text){
   			add.fromJSON(val[i]);
   			shapes.nodes.push(add);	
   		} else if (key=="switches"){
-  			add = new Switch();
+  			add = new Network(0,0,"Switch");
   			add.fromJSON(val[i]);
   			shapes.switches.push(add);	
   		} else if (key=="routers"){
-  			add = new Router();
+  			add = new Network(0,0,"Router");
   			add.fromJSON(val[i]);
   			shapes.routers.push(add);	
   		}
@@ -277,9 +277,9 @@ function add(obj){
  	shapes.arrows.push(obj);
  }else if(obj instanceof Node){
  	shapes.nodes.push(obj);
- }else if(obj instanceof Router){
+ }else if(obj instanceof Network && obj.type=="Router"){
  	shapes.routers.push(obj);
- }else if(obj instanceof Switch){
+ }else if(obj instanceof Network && obj.type=="Switch"){
  	shapes.switches.push(obj);
  }
  drawScreen();
@@ -292,9 +292,9 @@ function remove(obj){
  	objects = shapes.arrows;
  }else if(obj instanceof Node){
  	objects = shapes.nodes;
- } else if (obj instanceof Router){
+ } else if (obj instanceof Network && obj.type=="Router"){
  	objects = shapes.routers;
- } else if (obj instanceof Switch){
+ } else if (obj instanceof Network && obj.type=="Switch"){
  	objects = shapes.switches;
  }
  var i = 0;
@@ -369,10 +369,10 @@ function getIndexOf(el){
  }else if(el instanceof Node){
  	objects = shapes.nodes;
  	index.push('nodes');
- }else if(el instanceof Router){
+ }else if(el instanceof Network && el.type=="Router"){
  	objects = shapes.routers;
  	index.push('routers');
- }else if(el instanceof Switch){
+ }else if(el instanceof Network && el.type=="Switch"){
  	objects = shapes.switches;
  	index.push('switches');
  }
