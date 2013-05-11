@@ -166,8 +166,8 @@ this.connect=connect;
    var a = new Arrow(x1, y1, x2, y2);
    
     // define half diagonals
-   var d1 = new Arrow(x1,y1, obj1.x, obj1.y);
-   var d2 = new Arrow(x1,y1, obj1.x+(obj1.width*(obj1.scale/100)), obj1.y);
+    var d1 = new Arrow(x1,y1, obj1.x, obj1.y);
+    var d2 = new Arrow(x1,y1, obj1.x+(obj1.width*(obj1.scale/100)), obj1.y);
     var border = Math.ceil(obj1.border/2);
     var padding = border + line;
     // calculate new starting point based on the sector the arrow falls into
@@ -494,14 +494,14 @@ function Node(x, y, name, state){
  this.privnet=false;
  this.hyperv=false;
 
-this.networks = new Array(); // routers and switches
-this.bridges = new Array(); // bridges on the host, allowing direct connection
+ this.networks = new Array(); // routers and switches
+ this.bridges = new Array(); // bridges on the host, allowing direct connection
 
-this.sections={ "styleSection":true, "nodeSection":true, 
+ this.sections={ "styleSection":true, "nodeSection":true, 
                 "featureSection":true, "diskSection":true, 
                 "networkSection":true,  "bridgeSection":true};
 
-this.defaults={"disks":{"device":"disk", 
+ this.defaults={"disks":{"device":"disk", 
                 "type":"file", 
                 "driverName":"qemu", 
                 "driverType":"qcow2", 
@@ -675,9 +675,9 @@ function show_form(el, index){
     html.addAnother(diskSection, "disks");
     html.breakLine(diskSection);
 
-/* network name, target dev (how to name the network on the guest)*/
+    /* network name, target dev (how to name the network on the guest)*/
 
-  this.networks=app.getArrows(this);
+   this.networks=app.getArrows(this);
     for(i=0;i<this.networks.length;i++){
       if (this.networks[i].to==this){
         other=this.networks[i].from;
@@ -697,7 +697,7 @@ function show_form(el, index){
     html.addLabel(networkSection, 'info','Add networks by connecting the node to routers or switches.');
       html.breakLine(networkSection);
 
-/* bridge name, mac address, target dev */
+   /* bridge name, mac address, target dev */
     for(i=0;i<this.bridges.length;i++){
         html.addLabel(bridgeSection, 'name','Bridge name');
         html.addSubInput(bridgeSection,'text','bridges-name', this.bridges[i].name, i);
@@ -761,21 +761,21 @@ function show_form(el, index){
   convert this to JSON sting
 */
  this.toJSONstring=toJSONstring;
- function toJSONstring(){
-      /* arrows to network notation */
-      var networks=app.getArrows(this);
-      this.networks=[];
-      for (i=0;i<networks.length;i++){
-        if (networks[i].to==this){
-          this.networks.push({'name':networks[i].from.name, 'dev':networks[i].name});
-        } else {
-          this.networks.push({'name':networks[i].to.name, 'dev':networks[i].name});
-        }
+function toJSONstring(){
+    /* arrows to network notation */
+    var networks=app.getArrows(this);
+    this.networks=[];
+    for (i=0;i<networks.length;i++){
+      if (networks[i].to==this){
+        this.networks.push({'name':networks[i].from.name, 'dev':networks[i].name});
+      } else {
+        this.networks.push({'name':networks[i].to.name, 'dev':networks[i].name});
       }
+    }
     // some properites are supposed to be not exported as they should stay constant
     var ignore=["width", 'height', 'draggable','editable', 'sections', 'defaults' ];
     tmp="{  ";//\"type\" : \"Node\", \"id\" : "+app.getIndexOf(this)+", ";
-    for(var prop in this) {
+     for(var prop in this) {
       if(this.hasOwnProperty(prop)){         
           if (typeof this[prop] != "function" && ignore.indexOf(prop) < 0){
               if(typeof this[prop]=="number" || typeof this[prop]=="boolean"){
@@ -841,11 +841,11 @@ function Network(x, y, type,  name){
  this.name = typeof(name)!='undefined'? name:"new"+this.type; 
  this.bridgeName = "nat0";
  this.forward = "nat";
- this.ip = "10.0.x.0";
+ this.ip = "10.0.1.0";
  this.netmask = "255.255.255.0";
  this.dhcp = true;
- this.dhcpFrom = "10.0.x.100";
- this.dhcpTo = "10.0.x.200";
+ this.dhcpFrom = "10.0.1.100";
+ this.dhcpTo = "10.0.1.200";
 
  this.height = 49;
  this.width = 80;

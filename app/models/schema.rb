@@ -205,15 +205,21 @@ GUESTS_XML=("
   script="\n#!/bin/bash
 
 declare -a disk_sources=("
+  disks=[];
   (0..guests.length-1).each do |i|
     element=guests[i]
     # populate the guest xml array
     variables+=" \"${XML_DIR}#{element['name']}.xml\" "
     (0..element["disks"].length-1).each do |j|
         disk=element["disks"][j]
-        #populate the disk_sources array
-        script+=" \"#{disk["source"]}\" "
+        #populate the disks array
+        disks.push(disk['source'])
     end
+  end
+  # iterate over the unique files found in the json
+  disks.uniq!
+  (0..disks.length-1).each do |i|
+    script+=" \"#{disks[i]}\" "
   end
   # check if all the images exist, if there is one missing, exit with a notice
   script +=")
