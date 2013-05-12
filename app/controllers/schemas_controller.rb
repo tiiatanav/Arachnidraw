@@ -82,7 +82,7 @@ class SchemasController < ApplicationController
   end
 
   def draw
-    @schema = Schema.find_by_id(12)
+    @schema = Schema.first
     @test = @schema.make_script
   end
 end

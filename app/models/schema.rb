@@ -65,15 +65,66 @@ end
 # make the guest xml and image copying
 def make_guest(element, index)
 
-  features = Hash.new
-  features['pae']="\n\t\t<pae/>" if element["pae"]
-  features['acpi']="\n\t\t<acpi/>" if element["acpi"]
-  features['apic']="\n\t\t<apic/>" if element["apic"]
-  features['hap']="\n\t\t<hap/>" if element["hap"]
-  features['privnet']="\n\t\t<privnet/>" if element["privnet"]
-  features['hyperv']="\n\t\t<hyperv>\n\t\t\t<relaxed state='on'/>\n\t\t<hyperv/>" if element["hyperv"]
+  features = ""
+  features+="\n\t\t<pae/>" if element["pae"]
+  features+="\n\t\t<acpi/>" if element["acpi"]
+  features+="\n\t\t<apic/>" if element["apic"]
+  features+="\n\t\t<hap/>" if element["hap"]
+  features+="\n\t\t<privnet/>" if element["privnet"]
+  features+="\n\t\t<hyperv>\n\t\t\t<relaxed state='on'/>\n\t\t<hyperv/>" if element["hyperv"]
 
-  images ="";
+  images = ""
+  disk_elements = ""
+# make disk image copying script and disk elements
+   (0..element["disks"].length-1).each do |i|
+    disk=element["disks"][i]
+    disk["new_source"]=element['name']+i.to_s+".img"
+    # make the image copy commands - ARE THERE ONLY *.img FILES?
+    images+="j=${VIRT_DIR}/#{disk["new_source"]}
+cp #{disk["source"]} $j
+chgrp libvirtd $j
+
+"
+# NB! use the new, copied locations
+    disk_elements+= "\n\t\t<disk device='#{disk["device"]}' type='#{disk["type"]}'> 
+\t\t\t<driver name='#{disk["driverName"]}' type='#{disk["driverType"]}'/>   
+\t\t\t<source file='${VIRT_DIR}/#{disk["new_source"]}'/> 
+\t\t\t<target bus='#{disk["targetBus"]}' dev='#{disk["targetDev"]}'/> 
+\t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x0#{5+i}'/>
+\t\t</disk>"
+  end
+
+# make network elements
+network_elements=""
+(0..element["networks"].length-1).each do |i|
+  net=element["networks"][i];
+  network_elements+="\n\t\t<interface type='network'>
+\t\t\t<source network='#{net['name']}'/> 
+\t\t\t<target dev='#{net['dev']}'/> 
+\t\t</interface>
+"
+end
+
+# make bridge elements and the mac requests
+askfor=""
+bridge_elements=""
+(0..element["bridges"].length-1).each do |i|
+  bridge=element["bridges"][i];
+  mac=""
+  if bridge['hasMac']=="static" && bridge['mac']!="" then
+    mac="\n\t\t\t<mac address='#{bridge['mac']}'/>"
+  elsif bridge['hasMac']=="ask" then
+    askfor+="echo \"Please give the MAC aadress for bridge: #{bridge['name']} @ #{bridge['dev']}\"
+read ${MAC[#{i}]}\n" 
+    mac="\n\t\t\t<mac address='${MAC[#{i}]}'/>"
+  end
+  bridge_elements+="\t\t<interface type='bridge'> 
+\t\t\t<source bridge='#{bridge['name']}'/>
+\t\t\t<model type='e1000'/>
+\t\t\t<target dev='#{bridge['dev']}'/>#{mac} 
+\t\t</interface>
+"
+end
 
   guest="cat > ${GUESTS_XML[#{index}]} << LOPP
 <domain type='kvm'>
@@ -94,37 +145,16 @@ def make_guest(element, index)
 \t<on_reboot>restart</on_reboot>
 \t<on_crash>restart</on_crash>
 
-\t<features>"
-  features.each do |k,feature|
-    guest+= feature
-  end
-  guest+="\n\t</features>
+\t<features>#{features}
+\t</features>
 
 \t<clock offset='localtime'></clock>
 
 \t<devices>
 
-\t\t<emulator>/usr/bin/kvm</emulator>"
-
-  (0..element["disks"].length-1).each do |i|
-    disk=element["disks"][i]
-    disk["new_source"]=element['name']+i.to_s+".img"
-    # make the image copy commands - ARE THERE ONLY *.img FILES?
-    images+="j=${VIRT_DIR}/#{disk["new_source"]}
-cp #{disk["source"]} $j
-chgrp libvirtd $j
-
-"
-# NB! use the new, copied locations
-    guest+= "\n\t\t<disk device='#{disk["device"]}' type='#{disk["type"]}'> 
-\t\t\t<driver name='#{disk["driverName"]}' type='#{disk["driverType"]}'/>  	
-\t\t\t<source file='${VIRT_DIR}/#{disk["new_source"]}'/> 
-\t\t\t<target bus='#{disk["targetBus"]}' dev='#{disk["targetDev"]}'/> 
-\t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x0#{5+i}'/>
-\t\t</disk>"
-  end
-# NB! the CD drive hdc might conflict with the disk drives!
-  guest+="\n\t\t<disk device='cdrom' type='block'>
+\t\t<emulator>/usr/bin/kvm</emulator>
+#{disk_elements}
+\n\t\t<disk device='cdrom' type='block'>
 \t\t\t<driver name='qemu' type='raw'/>
 \t\t\t<target bus='ide' dev='hdc'/>
 \t\t\t<readonly/>
@@ -133,35 +163,8 @@ chgrp libvirtd $j
 
 \t\t<controller type='ide' index='0'> 
 \t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x1' slot='0x01'/>
-\t\t</controller>
-"
-(0..element["networks"].length-1).each do |i|
-  net=element["networks"][i];
-  guest+="\n\t\t<interface type='network'>
-\t\t\t<source network='#{net['name']}'/> 
-\t\t\t<target dev='#{net['dev']}'/> 
-\t\t</interface>
-"
-end
-askfor=""
-(0..element["bridges"].length-1).each do |i|
-  bridge=element["bridges"][i];
-  mac=""
-  if bridge['hasMac']=="static" && bridge['mac']!="" then
-    mac="\n\t\t\t<mac address='#{bridge['mac']}'/>"
-  elsif bridge['hasMac']=="ask" then
-    askfor+="echo \"Please give the MAC aadress for bridge: #{bridge['name']} @ #{bridge['dev']}\"
-read ${MAC[#{i}]}\n" 
-    mac="\n\t\t\t<mac address='${MAC[#{i}]}'/>"
-  end
-  guest+="\n\t\t<interface type='bridge'> 
-\t\t\t<source bridge='#{bridge['name']}'/>
-\t\t\t<model type='e1000'/>
-\t\t\t<target dev='#{bridge['dev']}'/>#{mac} 
-\t\t</interface>
-"
-end
-guest+="
+\t\t</controller>#{network_elements}
+#{bridge_elements}
 \t\t<input type='mouse' bus='usb'/>
 
 \t\t<graphics port='-1' type='vnc' autoport='yes'> 
