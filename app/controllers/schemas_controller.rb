@@ -82,7 +82,14 @@ class SchemasController < ApplicationController
   end
 
   def draw
-    @schema = Schema.first
-    @test = @schema.make_script
+   #@schema = Schema.first
+    #@test = @schema.make_script
+  end
+
+  def download
+    @schema = Schema.find(params[:id])
+    #headers["Content-Type"] = "application/x-shellscript"
+    #headers["Content-disposition"] = "attachment; filename=#{@schema.name}.sh"
+    send_data( @schema.script, :type=>"application/x-shellscript", :filename => "#{@schema.name}.sh" )
   end
 end

@@ -59,7 +59,7 @@ def make_network(element, type,  index)
 </network>
 LOPP
 "
-	return xml;
+	return xml
 end
 
 # make the guest xml and image copying
@@ -80,7 +80,7 @@ def make_guest(element, index)
     disk=element["disks"][i]
     disk["new_source"]=element['name']+i.to_s+".img"
     # make the image copy commands - ARE THERE ONLY *.img FILES?
-    images+="j=${VIRT_DIR}/#{disk["new_source"]}
+    images+="j=${VIRT_DIR}#{disk["new_source"]}
 cp #{disk["source"]} $j
 chgrp libvirtd $j
 
@@ -88,7 +88,7 @@ chgrp libvirtd $j
 # NB! use the new, copied locations
     disk_elements+= "\n\t\t<disk device='#{disk["device"]}' type='#{disk["type"]}'> 
 \t\t\t<driver name='#{disk["driverName"]}' type='#{disk["driverType"]}'/>   
-\t\t\t<source file='${VIRT_DIR}/#{disk["new_source"]}'/> 
+\t\t\t<source file='${VIRT_DIR}#{disk["new_source"]}'/> 
 \t\t\t<target bus='#{disk["targetBus"]}' dev='#{disk["targetDev"]}'/> 
 \t\t\t<address bus='0x00' domain='0x0000' type='pci' function='0x0' slot='0x0#{5+i}'/>
 \t\t</disk>"
@@ -201,7 +201,7 @@ def setup(all)
   routers=all['routers']
   switches=all['switches']
 
-  variables="\nVIRT_DIR=\"/var/lib/libvirt/images\"
+  variables="\nVIRT_DIR=\"/var/lib/libvirt/images/\"
 XML_DIR=\"/etc/libvirt/qemu/\"
 GUESTS_XML=("
   # go trough all guests and populate arrays

@@ -67,9 +67,23 @@ var menuHeight=40;
 this.targetElement='formHolder';
 var targetElement = this.targetElement;
 var save_uri = "schemas.json";
+var download_uri = "download";
 this.schemaId="";
 this.schemaName="";
 
+this.download=download;
+function download(){
+	var app = this;
+	if (app.schemaId!=""){
+		/*$.post(download_uri+"/"+app.schemaId, {})
+		.done(function(data) {
+					
+		}).fail(function(data) { 
+			$("#saveInfo").html("Download failed").css("color","red");
+		});*/
+		window.location=download_uri+"/"+app.schemaId;
+	}
+}
 
 this.save=save;
 function save(create){
@@ -80,7 +94,8 @@ function save(create){
 			//remember this save and let the user continue editing this
 			app.schemaName=data.name;
 			app.schemaId=data.id;
-			$("#saveInfo").html("Save was successful").css("color","green");		
+			$("#saveInfo").html("Save was successful").css("color","green");
+			app.download();		
 		}).fail(function(data) { 
 			$("#saveInfo").html("Name in use, pick another one.").css("color","red");
 		});
@@ -89,14 +104,17 @@ function save(create){
 			url: save_uri.replace(".json","/"+this.schemaId+".json"), 
 			type: 'PUT', 
 			data: {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}} 
-		}).done(function() {$("#saveInfo").html("Update was successful").css("color","green"); })
-			.fail(function() {$("#saveInfo").html("Update failed.").css("color","red"); });
+		}).done(function() {
+			$("#saveInfo").html("Update was successful").css("color","green"); 
+			app.download();
+		}).fail(function() {
+				$("#saveInfo").html("Update failed.").css("color","red"); 
+		});
 	}
 	// hide message after a few seconds
 	setTimeout(function(){
 		$("#saveInfo").html("");
-	},5000);
-	
+	},5000);	
 }
 
 this.load=load;

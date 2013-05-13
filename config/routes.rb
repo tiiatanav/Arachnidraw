@@ -1,6 +1,7 @@
 Arachnidraw::Application.routes.draw do
   resources :schemas
 
+  match "download/:id" =>"schemas#download"
   # The priority is based upon order of creation:
   # first created -> highest priority.
 
