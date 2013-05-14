@@ -1114,7 +1114,16 @@ function Menu(){
       name.setAttribute("placeholder", "Schema name here");
 
       saveSection.appendChild(name);
-
+      html.breakLine(saveSection);
+  
+      var down = document.createElement("input");
+      down.setAttribute("type","checkbox");
+      down.setAttribute("id", "downloadScript");
+      html.addLabel(saveSection, 'downloadScript','Download script?');
+      down.onchange = function() { // alert(element.value);
+        app.doDownload=down.checked;   
+     };
+      saveSection.appendChild(down);
       html.breakLine(saveSection);
 
       var submit = document.createElement("button");

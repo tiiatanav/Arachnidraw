@@ -70,17 +70,13 @@ var save_uri = "schemas.json";
 var download_uri = "download";
 this.schemaId="";
 this.schemaName="";
+this.doDownload=false;
 
 this.download=download;
 function download(){
 	var app = this;
-	if (app.schemaId!=""){
-		/*$.post(download_uri+"/"+app.schemaId, {})
-		.done(function(data) {
-					
-		}).fail(function(data) { 
-			$("#saveInfo").html("Download failed").css("color","red");
-		});*/
+	if (app.schemaId!="" && app.doDownload){
+		app.doDownload=false;
 		window.location=download_uri+"/"+app.schemaId;
 	}
 }
