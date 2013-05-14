@@ -48,6 +48,7 @@ init();
 
 	
 var shapes;
+var errors;
 var being_dragged; // dragged element
 var being_used; // active menuitem
 var being_clicked; // last clicked element 
@@ -61,7 +62,6 @@ var timer;
 var targetX;
 var targetY;
 var easeAmount;
-var bgColor;
 var textColor;
 var menuHeight=40;
 this.targetElement='formHolder';
@@ -84,8 +84,15 @@ function download(){
 this.save=save;
 function save(create){
 	var app = this;
+	var json = validate(makeJSON());
+	// if there are validation errors display errors and dont save
+	if (errors.length>0){
+		displayErrors("Save failed because:")
+		return false;
+	}
+	// no errors found during validation
 	if (this.schemaId=="" || create){ // create a new schema
-		$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}})
+		$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": json}})
 		.done(function(data) {
 			//remember this save and let the user continue editing this
 			app.schemaName=data.name;
@@ -142,14 +149,97 @@ function load(){
 }
 
 this.validate=validate;
-function validate(json){
+function validate(text){
+	var json = JSON.parse(text);
 	var i;
 	/*
 TODO! validate json
 	*/
+/* validate that all elements are mentioned in arrows */
+ var connected=[];
+ for (i=0;i<json['arrows'].length;i++){
+	if (connected.indexOf(json['arrows'][i].from)<0) connected.push(json['arrows'][i].from);
+ 	if (connected.indexOf(json['arrows'][i].to)<0) connected.push(json['arrows'][i].to);
+ }
+ $.each(json, function(objType, objects){
+	if (objType!="arrows"){
+		$.each(objects, function(key,val){
+			if (connected.indexOf(objType+"-"+key)<0) addError("Orphan '"+val.name+"' found");
+		});
+	}
+ });
 
- /* validate arrow ends  */
- for (i=0; i<json['arrows'].length-1; i++){
+/* validate names - cant be duplicates */
+ var names=[];
+ $.each(json, function(objType, objects){
+	$.each(objects, function(key,val){
+		if (val.hasOwnProperty("name")) names.push(val.name);
+	});
+ });
+ var uniqueNames=[];
+ for (i=0; i<names.length; i++){
+	if (uniqueNames.indexOf(names[i])>=0){
+		// if the name already exists, raise error
+		addError("Name '"+names[i]+"' used more than once.")
+	} else {
+		// if the name doesnt exist, add it to uniques
+		uniqueNames.push(names[i]);
+	}
+ }
+/* validate IP addresses - cant be duplicates */
+/* valitate IP, can not end with a .0 (network) */
+ var IPs=[];
+ $.each(json, function(objType, objects){
+	$.each(objects, function(key,val){
+		if (val.hasOwnProperty("ip")) IPs.push(val.ip);
+		// the dhcp ranges should not use repetitive ip-s either
+		if (val.hasOwnProperty("dhcpFrom")) IPs.push(val.dhcpFrom);
+		if (val.hasOwnProperty("dhcpTo")) IPs.push(val.dhcpTo);
+	});
+ });
+ var uniqueIPs=[];
+ for (i=0; i<IPs.length; i++){
+	if (IPs[i].slice(-2)==".0" || IPs[i].slice(-4)==".255"){
+		// unvalid IP, cant use network or broadcast
+		addError("IP '"+IPs[i]+"' is reserved.");
+	}
+	if (uniqueIPs.indexOf(IPs[i])>=0){
+		// if the IP already exists, raise error
+		addError("IP '"+IPs[i]+"' used more than once.");
+	} else {
+		// if the IP doesnt exist, add it to uniques
+		uniqueIPs.push(IPs[i]);
+	}
+ }
+
+/* validate IP address ranges - can not overlap TODO */
+var IPranges=[];
+$.each(json, function(objType, objects){
+	$.each(objects, function(key,val){
+		if (val.hasOwnProperty("dhcpTo") && val.hasOwnProperty("dhcpFrom")){
+			IPranges.push({"from":val.dhcpFrom, "to":val.dhcpTo});
+		} 
+	});
+});
+
+
+/* validate dev - unique in specific machine */
+ for (i=0; i < json['nodes'].length; i++){
+	var uniqueDevs=[];
+	var el = json['nodes'][i];
+	$.each(el.disks, function(key, disk){
+		if (uniqueDevs.indexOf(disk.targetDev)>=0){
+		// if the IP already exists, raise error
+			addError("dev '"+disk.targetDev+"' used more than once in machine '"+el.name+"'.");
+		} else {
+		// if the IP doesnt exist, add it to uniques
+			uniqueDevs.push(disk.targetDev);
+		}	
+	});
+ }
+
+/* validate arrow ends - can not be with same type ends */
+ for (i=0; i<json['arrows'].length; i++){
 	var to = json['arrows'][i].to.split('-');
 	var from = json['arrows'][i].from.split('-');
 	//console.log(to, from);
@@ -160,10 +250,31 @@ TODO! validate json
 	if (from[0]==to[0]){
 		// remove this arrow
 		json['arrows'].splice(i, 1);
+		/* add errror to error notices */
+		addError("Arrow can not connect objects of same type.");
 	}
  }
+console.log(errors);
+return json;
+}
 
- return json;
+function addError(text){
+	if (errors.indexOf(text)<0) { // display this error only once
+		errors.push(text);
+	}
+}
+
+function displayErrors(text){
+	var i;
+	errorsection=document.getElementById("saveError");
+	errorsection.innerHTML="<b>"+text+"</b>";
+	for (i=0; i<errors.length; i++){
+		var info = document.createElement("div");
+    	info.innerHTML=errors[i];
+    	errorsection.appendChild(info);
+	}
+	// clear errors after displaying
+	errors=[];
 }
 
 this.makeJSON=makeJSON;
@@ -218,18 +329,24 @@ function exportJSON(){
     jsonSection.appendChild(element);
 
 	html.breakLine(jsonSection);
-
+	// add a place for errors
+ 	var error = document.createElement("div");
+    error.style.color="red";
+    error.setAttribute("id","saveError");
+    jsonSection.appendChild(error);
+	// add textarea
 	var area = document.createElement("textarea");
 	area.setAttribute("id", "JSON");
 	area.setAttribute('style',"display:block; width:95%; margin:auto; min-height:430px;");
 	area.innerHTML = txt;
  	jsonSection.appendChild(area);
+ 	
 }
 
 this.importJSON=importJSON;
 function importJSON(text){
  shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};
- var json=validate(JSON.parse(text));
+ var json=validate(text);
 	
  json=updateArrows(json); 
 
@@ -257,11 +374,13 @@ function importJSON(text){
 });
 // every object exists now, get arrow names from nodes
 drawScreen();
+// display error messages too!
+displayErrors("Validation errors: ");
 }
 
 function updateArrows(json){
-// in the nodes, there is networks, that have the dev value for the arrow name
-// and the name for the object it is connected to
+ // in the nodes, there is networks, that have the dev value for the arrow name
+ // and the name for the object it is connected to
 	for (i=0; i<json.arrows.length; i++){
 		var to=json.arrows[i].to.split('-');
 		var from=json.arrows[i].from.split('-');
@@ -330,14 +449,14 @@ function removeAll(){
  	drawScreen();
 }
 
-this.getNode=getNode;
+/*this.getNode=getNode;
 function getNode(id){
   return shapes.nodes[id];	
 }
 this.getArrow=getArrow;
 function getArrow(id){
   return shapes.arrows[id];	
-}
+}*/
 
 this.getArrows=getArrows;
 function getArrows(obj){
@@ -354,11 +473,11 @@ this.getShape=getShape;
 function getShape(type,id) {
 	return shapes[type][id];
 }
-
+/*
 this.getShapes=getShapes;
 function getShapes(){
 	return shapes;
-}
+}*/
 
 this.getNames=getNames;
 function getNames(types) {
@@ -371,6 +490,19 @@ function getNames(types) {
   		});
   	}
   	return names;
+}
+
+this.getIPs=getIPs;
+function getIPs(types) {
+	var i;
+	var IPs=[];
+	for (i = 0; i < types.length; i++){
+  		var objects=shapes[types[i]];
+  		$.each(objects, function(key,val){
+  			if (val.hasOwnProperty("ip")) IPs.push(val.ip);
+  		});
+  	}
+  	return IPs;
 }
 
 this.getIndexOf=getIndexOf;
@@ -420,10 +552,9 @@ this.redraw=drawScreen;
 	
 function init() {
 	easeAmount = 0.20;
-	bgColor = "#ffffff";
 	textColor="#000000";
 	shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};
-
+	errors=[];
 	drawScreen();
 
 	c.addEventListener("mousedown", mouseDownListener, false);
@@ -737,8 +868,7 @@ function drawShapes() {
 }
 	
 function drawScreen() {
-	//bg
-	ctx.fillStyle = bgColor;
+	//clear
 	ctx.clearRect(0, 0, c.width, c.height);
    
 	drawShapes();		

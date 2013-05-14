@@ -955,10 +955,20 @@ function show_form(el, index){
    html.addTextSelect(networkSection,'forward',this.forward, 
                       ["nat", "route", "bridge", "private", "vepa", "passthrough", "hostdev"]);
    html.breakLine(networkSection);
-
+    /*TODO: add update to ip change. maybe use a normal text area after all*/
    html.addLabel(networkSection, 'ip','IP address');
    html.addIP(networkSection,'ip',this.ip);
    html.breakLine(networkSection);
+   var IPs = app.getIPs(["routers", "switches", "nodes"]);
+   count=0;
+   for (i=0; i<IPs.length; i++){
+    if (IPs[i]==this.ip) count++;
+   }
+   if (count>1){
+    html.errorNotice(networkSection, "IP in use, choose another one");
+    html.breakLine(networkSection);
+   } 
+
    html.addLabel(networkSection, 'netmask','Netmask');
    html.addIP(networkSection,'netmask',this.netmask);
    html.breakLine(networkSection);
@@ -1146,8 +1156,13 @@ function Menu(){
 
       var info = document.createElement("p");
       info.setAttribute("id","saveInfo");
-
       saveSection.appendChild(info);
+
+      var error = document.createElement("div");
+      error.style.color="red";
+      error.setAttribute("id","saveError");
+      saveSection.appendChild(error);
+
     },
     'draw':function(ctx){
       draw(this, ctx);
