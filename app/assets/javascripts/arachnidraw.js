@@ -212,7 +212,7 @@ TODO! validate json
 	}
  }
 
-/* validate IP address ranges - can not overlap TODO */
+/* validate IP address ranges - can not overlap  */
 var IPranges=[];
 $.each(json, function(objType, objects){
 	$.each(objects, function(key,val){
@@ -221,8 +221,19 @@ $.each(json, function(objType, objects){
 		} 
 	});
 });
-
-
+$.each(IPranges, function(key,val){
+	$.each(IPranges, function(key2,val2){
+		if (key!=key2) {
+			var r1=inRange(val.from, val.to, val2.from);
+			var r2=inRange(val.from, val.to, val2.to);
+			//console.log(val.from.toString(), val.to.toString(),	val2.from.toString(),r1,val2.to.toString(), r2);
+			if(r1 || r2){
+				addError("Network devices IP ranges overlap.");
+			}			
+		}
+	});	
+});
+/* validate dev for networks and bridges - have to be unique in machine TODO */
 /* validate dev - unique in specific machine */
  for (i=0; i < json['nodes'].length; i++){
 	var uniqueDevs=[];
@@ -258,6 +269,29 @@ console.log(errors);
 return json;
 }
 
+
+this.bin=toBinary;
+function toBinary(val){
+	var res=parseInt(val).toString(2);
+	var i;
+	while (res.length<8){
+		res="0"+res;
+	}
+	return res;
+}
+
+this.inRange=inRange;
+function inRange(from,to,ip){
+	var f=from.split('.');
+	var t=to.split('.');
+	var i=ip.split('.');
+	var a = toBinary(f[0])+toBinary(f[1])+toBinary(f[2])+toBinary(f[3]);
+	var b = toBinary(t[0])+toBinary(t[1])+toBinary(t[2])+toBinary(t[3]);
+	var c = toBinary(i[0])+toBinary(i[1])+toBinary(i[2])+toBinary(i[3]); 
+	//console.log(a, parseInt(a,2),b, parseInt(b,2),c , parseInt(c,2));
+	return parseInt(a,2)<=parseInt(c,2) && parseInt(c,2)<=parseInt(b,2);
+}
+
 function addError(text){
 	if (errors.indexOf(text)<0) { // display this error only once
 		errors.push(text);
@@ -267,11 +301,13 @@ function addError(text){
 function displayErrors(text){
 	var i;
 	errorsection=document.getElementById("saveError");
-	errorsection.innerHTML="<b>"+text+"</b>";
-	for (i=0; i<errors.length; i++){
-		var info = document.createElement("div");
-    	info.innerHTML=errors[i];
-    	errorsection.appendChild(info);
+	if (errorsection != null) {
+		errorsection.innerHTML="<b>"+text+"</b>";
+		for (i=0; i<errors.length; i++){
+			var info = document.createElement("div");
+    		info.innerHTML=errors[i];
+    		errorsection.appendChild(info);
+		}
 	}
 	// clear errors after displaying
 	errors=[];
@@ -321,10 +357,7 @@ function exportJSON(){
     //Assign different attributes to the element.
     element.innerHTML = "Import";
     element.setAttribute("id", "importJSON");
-    // change value when input value changes
-    element.onclick = function() {
-     app.importJSON(area.value);
-    };
+    
     //Append the element in page (in span).
     jsonSection.appendChild(element);
 
@@ -339,6 +372,10 @@ function exportJSON(){
 	area.setAttribute("id", "JSON");
 	area.setAttribute('style',"display:block; width:95%; margin:auto; min-height:430px;");
 	area.innerHTML = txt;
+	// if user clicks on the inport button
+    element.onclick = function() {
+     app.importJSON(area.value);
+    };
  	jsonSection.appendChild(area);
  	
 }
@@ -375,7 +412,7 @@ function importJSON(text){
 // every object exists now, get arrow names from nodes
 drawScreen();
 // display error messages too!
-displayErrors("Validation errors: ");
+if (errors.length>0) displayErrors("Validation errors: ");
 }
 
 function updateArrows(json){
@@ -473,11 +510,11 @@ this.getShape=getShape;
 function getShape(type,id) {
 	return shapes[type][id];
 }
-/*
+
 this.getShapes=getShapes;
 function getShapes(){
 	return shapes;
-}*/
+}
 
 this.getNames=getNames;
 function getNames(types) {
@@ -500,6 +537,21 @@ function getIPs(types) {
   		var objects=shapes[types[i]];
   		$.each(objects, function(key,val){
   			if (val.hasOwnProperty("ip")) IPs.push(val.ip);
+  		});
+  	}
+  	return IPs;
+}
+
+this.getIPranges=getIPranges;
+function getIPranges(types) {
+	var i;
+	var IPs={};
+	for (i = 0; i < types.length; i++){
+  		var objects=shapes[types[i]];
+  		$.each(objects, function(key,val){
+  			if (val.dhcp){
+  				IPs[types[i]+"-"+key]={"from":val.dhcpFrom, "to":val.dhcpTo};
+  			} 
   		});
   	}
   	return IPs;

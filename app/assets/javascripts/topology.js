@@ -976,12 +976,32 @@ function show_form(el, index){
    html.addBool(dhcpSection,'dhcp',this.dhcp);
    html.breakLine(dhcpSection);
    if (this.dhcp){
+    /* TODO add range validation */
     html.addLabel(dhcpSection, 'dhcpFrom','From');
     html.addIP(dhcpSection,'dhcpFrom',this.dhcpFrom);
     html.breakLine(dhcpSection);
     html.addLabel(dhcpSection, 'dhcpTo','To');
     html.addIP(dhcpSection,'dhcpTo',this.dhcpTo);
     html.breakLine(dhcpSection);
+
+    var IPranges=app.getIPranges(["routers", "switches"]);
+    var inf=app.getIndexOf(this);
+    var found=false;
+    var net=this;
+    $.each(IPranges, function(key,val){
+        if (key!=inf[0]+"-"+inf[1]) {
+
+          //console.log(val.from, val.to, net.dhcpFrom, net.dhcpTo);
+
+          var r1=app.inRange(val.from, val.to, net.dhcpFrom);
+          var r2=app.inRange(val.from, val.to, net.dhcpTo); 
+          if ((r1 || r2) && !found){
+            html.errorNotice(dhcpSection, "IP range in use, choose another one");
+            html.breakLine(dhcpSection);
+            found=true;
+          }     
+        }
+    });
    }
 }
 
@@ -1716,6 +1736,7 @@ function addIP(el, id, value){
         next.focus();
       } 
       temp[id] = newvalue.slice(0,-1); 
+      temp.show_form(el.parentElement, key);
     };
 
     
