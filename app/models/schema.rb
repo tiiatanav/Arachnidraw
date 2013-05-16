@@ -200,7 +200,7 @@ def setup(all)
   guests=all['nodes']
   routers=all['routers']
   switches=all['switches']
-
+  names="names=("
   variables="\nVIRT_DIR=\"/var/lib/libvirt/images/\"
 XML_DIR=\"/etc/libvirt/qemu/\"
 GUESTS_XML=("
@@ -218,6 +218,8 @@ declare -a disk_sources=("
         #populate the disks array
         disks.push(disk['source'])
     end
+    # populate the name array
+    names+=" \"#{element['name']}\" "
   end
   # iterate over the unique files found in the json
   disks.uniq!
@@ -233,7 +235,7 @@ do
 \t\texit 2
 \tfi
 done
-# there were no missing images, define variables and make copies to the libvirt folder"
+# there were no missing images, check if the names are available\n"
 # populate other XML file arrays
   variables+=")
 ROUTERS_XML=("
@@ -241,15 +243,31 @@ ROUTERS_XML=("
     element=routers[i]
     #populate the networks_xml array
     variables+=" \"${XML_DIR}#{element['name']}.xml\" "
+    names+=" \"#{element['name']}\" "
   end
   variables+=")
 SWITCHES_XML=("
   (0..switches.length-1).each do |i|
     element=switches[i]
      variables+=" \"${XML_DIR}#{element['name']}.xml\" "
+     names+=" \"#{element['name']}\" "
   end
 variables+=")\n\n"
-  return script+variables
+names+=")
+
+for name in ${names[@]}; 
+do 
+\tvirsh dominfo $name &>/dev/null
+\tgs=$?
+\tvirsh net-info $name &>/dev/null
+\tns=$? 
+\tif [ $gs -eq 0 ] || [ $ns -eq 0 ]; then 
+\t\techo \"Name '${name}' in use\"
+\t\texit 2
+\tfi
+done
+# names are available \n"
+  return script+names+variables
 end
 
 
