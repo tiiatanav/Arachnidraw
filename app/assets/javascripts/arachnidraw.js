@@ -84,6 +84,8 @@ function download(){
 this.save=save;
 function save(create){
 	var app = this;
+	errorsection=document.getElementById("saveError");
+	errorsection.innerHTML="";
 	var json = validate(makeJSON());
 	// if there are validation errors display errors and dont save
 	if (errors.length>0){
@@ -153,9 +155,9 @@ function validate(text){
 	var json = JSON.parse(text);
 	var i;
 	/*
-TODO! validate json
+ TODO! validate json
 	*/
-/* validate that all elements are mentioned in arrows */
+ /* validate that all elements are mentioned in arrows */
  var connected=[];
  for (i=0;i<json['arrows'].length;i++){
 	if (connected.indexOf(json['arrows'][i].from)<0) connected.push(json['arrows'][i].from);
@@ -169,7 +171,7 @@ TODO! validate json
 	}
  });
 
-/* validate names - cant be duplicates */
+ /* validate names - cant be duplicates */
  var names=[];
  $.each(json, function(objType, objects){
 	$.each(objects, function(key,val){
@@ -180,14 +182,18 @@ TODO! validate json
  for (i=0; i<names.length; i++){
 	if (uniqueNames.indexOf(names[i])>=0){
 		// if the name already exists, raise error
-		addError("Name '"+names[i]+"' used more than once.")
+		addError("Name '"+names[i]+"' used more than once.");
 	} else {
 		// if the name doesnt exist, add it to uniques
 		uniqueNames.push(names[i]);
+		if(names[i].indexOf(' ')>=0){
+			addError("Names should not contain spaces.");
+		}
+
 	}
  }
-/* validate IP addresses - cant be duplicates */
-/* valitate IP, can not end with a .0 (network) */
+ /* validate IP addresses - cant be duplicates */
+ /* valitate IP, can not end with a .0 (network) */
  var IPs=[];
  $.each(json, function(objType, objects){
 	$.each(objects, function(key,val){
@@ -212,16 +218,16 @@ TODO! validate json
 	}
  }
 
-/* validate IP address ranges - can not overlap  */
-var IPranges=[];
-$.each(json, function(objType, objects){
+ /* validate IP address ranges - can not overlap  */
+  var IPranges=[];
+  $.each(json, function(objType, objects){
 	$.each(objects, function(key,val){
 		if (val.hasOwnProperty("dhcpTo") && val.hasOwnProperty("dhcpFrom")){
 			IPranges.push({"from":val.dhcpFrom, "to":val.dhcpTo});
 		} 
 	});
-});
-$.each(IPranges, function(key,val){
+  });
+  $.each(IPranges, function(key,val){
 	$.each(IPranges, function(key2,val2){
 		if (key!=key2) {
 			var r1=inRange(val.from, val.to, val2.from);
@@ -232,9 +238,9 @@ $.each(IPranges, function(key,val){
 			}			
 		}
 	});	
-});
-/* validate dev for networks and bridges - have to be unique in machine TODO */
-/* validate dev - unique in specific machine */
+ });
+ /* validate dev for networks and bridges - have to be unique in machine TODO */
+ /* validate dev - unique in specific machine */
  for (i=0; i < json['nodes'].length; i++){
 	var uniqueDevs=[];
 	var el = json['nodes'][i];
@@ -245,11 +251,14 @@ $.each(IPranges, function(key,val){
 		} else {
 		// if the IP doesnt exist, add it to uniques
 			uniqueDevs.push(disk.targetDev);
+		}
+		if (disk.source.substring(0,1)!="/") {
+			addError("Disk sources have to be given with an absolute path.");
 		}	
 	});
  }
 
-/* validate arrow ends - can not be with same type ends */
+ /* validate arrow ends - can not be with same type ends */
  for (i=0; i<json['arrows'].length; i++){
 	var to = json['arrows'][i].to.split('-');
 	var from = json['arrows'][i].from.split('-');
@@ -270,7 +279,6 @@ return json;
 }
 
 
-this.bin=toBinary;
 function toBinary(val){
 	var res=parseInt(val).toString(2);
 	var i;
@@ -408,11 +416,11 @@ function importJSON(text){
   			shapes.routers.push(add);	
   		}
 	}
-});
-// every object exists now, get arrow names from nodes
-drawScreen();
-// display error messages too!
-if (errors.length>0) displayErrors("Validation errors: ");
+ });
+ // every object exists now, get arrow names from nodes
+ drawScreen();
+ // display error messages too!
+ if (errors.length>0) displayErrors("Validation errors: ");
 }
 
 function updateArrows(json){
@@ -780,7 +788,7 @@ function menuHelper(evt){
 			if (mouseY < menuHeight){
 					being_used.click(mouseX,menuHeight);
 			} else {
-					being_used.drop(mouseX, mouseY);
+					being_used.click(mouseX, mouseY);
 			}
 			// unset menuitem once done
 			being_used=null;

@@ -1227,9 +1227,6 @@ function Menu(){
     'width':35,
     'height':27,
     'click': function(x,y) {
-       this.drop(x,y);
-    },
-    'drop':function(x,y){
        tmp = new Node(Math.floor(x), Math.floor(y));
        app.add(tmp);
     },
@@ -1254,9 +1251,6 @@ function Menu(){
     'width':35,
     'height':21,
     'click': function(x,y) {
-       this.drop(x,y);
-    },
-    'drop':function(x,y){
        tmp = new Network(Math.floor(x), Math.floor(y), "Router");
        app.add(tmp);
     },
@@ -1281,9 +1275,6 @@ function Menu(){
     'width':35,
     'height':20,
     'click': function(x,y) {
-       this.drop(x,y);
-    },
-    'drop':function(x,y){
        tmp = new Network(Math.floor(x), Math.floor(y), "Switch");
        app.add(tmp);
     },
