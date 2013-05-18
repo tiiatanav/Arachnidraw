@@ -1,22 +1,41 @@
+var canvasAppConfig = {
+	"create" : {
+		"uri":"schemas.json",
+		"method":"POST" 
+	},
+	"load" : {
+		"uri":"schemas.json",
+		"method":"GET" 
+	},
+	"update" : {
+		"uri":"schemas.json",
+		"method":"PUT" 
+	},
+	"download_uri": "download"
+};
+
+var images = {'menu':['/assets/new.svg', '/assets/open.svg','/assets/save.svg', '/assets/hand.svg','/assets/arrow2.svg',  '/assets/duplicate.svg', '/assets/trash.svg', '/assets/json.png'],
+              'nodes':['/assets/workstation.svg', '/assets/workstation_green.svg','/assets/workstation_red.svg'],
+              'switches':['/assets/switch.svg'],
+              'routers':['/assets/router.svg']
+};
+
+
 window.onload = function() {
 	// only load functionality when there is a proper placeholder present
 	var div = document.getElementById("AppHolder");
 	if (div != null) {
-		var prop=document.createElement("div");	
-		prop.setAttribute("id", "formHolder");
-		prop.innerHTML="<div class=\"appSectionTitle\">Properties area</div><p>Hint: Double click on a element to see its properties</p>"
-		div.appendChild(prop);
-	
-		var c = document.createElement("canvas");	
-		c.setAttribute("id", "myCanvas");
-		c.setAttribute("width", div.clientWidth - prop.offsetWidth-5);
-		c.setAttribute("height", 500);
-		div.appendChild(c);
-	
-   loadImages(images, windowLoadHandler);
+   		loadImages(images, windowLoadHandler);
 	}
 };
 
+/* called after images have finished loading */
+function windowLoadHandler(img) {
+	images = img;
+	app = new canvasApp();
+}
+
+/* resize the canvas on window resize NB! objects will not move (yet?) */
 window.onresize = function(event) {
    canvas = document.getElementById('myCanvas');
    if (canvas!=null){
@@ -27,26 +46,12 @@ window.onresize = function(event) {
    }
 }
 
-//window.addEventListener("load", windowLoadHandler, false);
-function windowLoadHandler(img) {
-	
-	images = img;
-	app = new canvasApp();
-
-}
-
 function canvasApp() {	
-var c=document.getElementById("myCanvas");
-var ctx=c.getContext("2d");
-
-var menu=new Menu();
-
+var c;
 this.c=c;
+var ctx;
 this.ctx=ctx;
-
-init();
-
-	
+var menu=new Menu();	
 var shapes;
 var errors;
 var being_dragged; // dragged element
@@ -66,11 +71,12 @@ var textColor;
 var menuHeight=40;
 this.targetElement='formHolder';
 var targetElement = this.targetElement;
-var save_uri = "schemas.json";
-var download_uri = "download";
 this.schemaId="";
 this.schemaName="";
 this.doDownload=false;
+
+/* config done */
+init();
 
 this.download=download;
 function download(){
@@ -94,8 +100,11 @@ function save(create){
 	}
 	// no errors found during validation
 	if (this.schemaId=="" || create){ // create a new schema
-		$.post(save_uri, {"schema":{"name": $("#schemaName").val(), "json": json}})
-		.done(function(data) {
+		$.ajax({ 
+			url: canvasAppConfig.create.uri, 
+			type: canvasAppConfig.create.method, 
+			data: {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}} 
+		}).done(function(data) {
 			//remember this save and let the user continue editing this
 			app.schemaName=data.name;
 			app.schemaId=data.id;
@@ -106,8 +115,8 @@ function save(create){
 		});
 	} else { // update existing schema
 		$.ajax({ 
-			url: save_uri.replace(".json","/"+this.schemaId+".json"), 
-			type: 'PUT', 
+			url: canvasAppConfig.update.uri.replace(".json","/"+app.schemaId+".json"), 
+			type: canvasAppConfig.update.method, 
 			data: {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}} 
 		}).done(function() {
 			$("#saveInfo").html("Update was successful").css("color","green"); 
@@ -129,25 +138,31 @@ function load(){
 	holder.innerHTML="";
 	var loadSection = html.addSection(holder,'loadSection', 'Open Schema', false);
 	html.breakLine(loadSection);
-	$.get(save_uri, {},
-		function(data){
-			$.each(data, function(key, val){
-				//console.log("open:",val.id, val.name);
-				var span = document.createElement("span");
-				span.innerHTML=val.name;
-				span.setAttribute("class", "loadSchema");
-				span.onclick=function(){
-					importJSON(val.json);
-					app.schemaName=val.name;
-					app.schemaId=val.id;
-					$(".loadedSchema").removeClass("loadedSchema");
-					this.setAttribute("class", "loadSchema loadedSchema");
-				}
-				loadSection.appendChild(span);
-				//html.breakLine(loadSection);
-			});
-			  
+	$.ajax({ 
+			url: canvasAppConfig.load.uri, 
+			type: canvasAppConfig.load.method, 
+			data: {} 
+	}).done(function(data) {
+		$.each(data, function(key, val){
+			//console.log("open:",val.id, val.name);
+			var span = document.createElement("span");
+			span.innerHTML=val.name;
+			span.setAttribute("class", "loadSchema");
+			span.onclick=function(){
+				importJSON(val.json);
+				app.schemaName=val.name;
+				app.schemaId=val.id;
+				$(".loadedSchema").removeClass("loadedSchema");
+				this.setAttribute("class", "loadSchema loadedSchema");
+			}
+			loadSection.appendChild(span);
+			//html.breakLine(loadSection);
 		});
+	}).fail(function() {
+		var span = document.createElement("span");
+		span.innerHTML="loading schemas failed.";
+		loadSection.appendChild(span);
+	});
 }
 
 this.validate=validate;
@@ -611,6 +626,20 @@ function getOptionsForSelect(){
 this.redraw=drawScreen;
 	
 function init() {
+	console.log(canvasAppConfig);
+	var div = document.getElementById("AppHolder");
+	var prop=document.createElement("div");	
+	prop.setAttribute("id", "formHolder");
+	prop.innerHTML="<div class=\"appSectionTitle\">Properties area</div><p>Hint: Double click on a element to see its properties</p>"
+	div.appendChild(prop);
+	
+	c = document.createElement("canvas");	
+	c.setAttribute("id", "myCanvas");
+	c.setAttribute("width", div.clientWidth - prop.offsetWidth-5);
+	c.setAttribute("height", 500);
+	div.appendChild(c);
+	ctx=c.getContext("2d")
+
 	easeAmount = 0.20;
 	textColor="#000000";
 	shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};

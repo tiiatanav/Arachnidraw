@@ -2,12 +2,6 @@
 PRELOAD ALL IMAGES
 */
 
-var images = {'menu':['/assets/new.svg', '/assets/open.svg','/assets/save.svg', '/assets/hand.svg','/assets/arrow2.svg',  '/assets/duplicate.svg', '/assets/trash.svg', '/assets/json.png'],
-              'nodes':['/assets/workstation.svg', '/assets/workstation_green.svg','/assets/workstation_red.svg'],
-              'switches':['/assets/switch.svg'],
-              'routers':['/assets/router.svg']
-};
-
 function loadImages(sources, callback) {
   var images = {};
   var loadedImages = 0;
@@ -841,7 +835,7 @@ function Network(x, y, type,  name){
  this.name = typeof(name)!='undefined'? name:"new"+this.type; 
  this.bridgeName = "nat0";
  this.forward = "nat";
- this.ip = "10.0.1.0";
+ this.ip = "10.0.1.1";
  this.netmask = "255.255.255.0";
  this.dhcp = true;
  this.dhcpFrom = "10.0.1.100";
