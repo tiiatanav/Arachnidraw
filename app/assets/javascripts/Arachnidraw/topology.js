@@ -1705,7 +1705,7 @@ function addIP(el, id, value){
         var tmp = document.getElementById(id+'-'+j);
         if (tmp == this) nr = j;
         tmp.value=parseInt(tmp.value);
-        if (tmp.value>255) tmp.value=255;
+        if (tmp.value>254) tmp.value=254;
         if (tmp.value.toString()=="NaN") tmp.value=0;
         // TODO the last has to be between 0 and 255 non-inclusive
         newvalue += tmp.value+".";
