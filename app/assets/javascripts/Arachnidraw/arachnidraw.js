@@ -3,7 +3,7 @@ var canvasAppConfig = {
 		"uri":"schemas.json",
 		"method":"POST" 
 	},
-	"load" : {
+	"index" : {
 		"uri":"schemas.json",
 		"method":"GET" 
 	},
@@ -11,13 +11,14 @@ var canvasAppConfig = {
 		"uri":"schemas.json",
 		"method":"PUT" 
 	},
-	"download_uri": "download"
+	"download_uri": "download",
+	"authenticity_token":"tokenElement"
 };
 
-var images = {'menu':['/assets/new.svg', '/assets/open.svg','/assets/save.svg', '/assets/hand.svg','/assets/arrow2.svg',  '/assets/duplicate.svg', '/assets/trash.svg', '/assets/json.png'],
-              'nodes':['/assets/workstation.svg', '/assets/workstation_green.svg','/assets/workstation_red.svg'],
-              'switches':['/assets/switch.svg'],
-              'routers':['/assets/router.svg']
+var images = {'menu':['/assets/Arachnidraw/new.svg', '/assets/Arachnidraw/open.svg','/assets/Arachnidraw/save.svg', '/assets/Arachnidraw/hand.svg','/assets/Arachnidraw/arrow2.svg',  '/assets/Arachnidraw/duplicate.svg', '/assets/Arachnidraw/trash.svg', '/assets/Arachnidraw/json.png'],
+              'nodes':['/assets/Arachnidraw/workstation.svg', '/assets/Arachnidraw/workstation_green.svg','/assets/Arachnidraw/workstation_red.svg'],
+              'switches':['/assets/Arachnidraw/switch.svg'],
+              'routers':['/assets/Arachnidraw/router.svg']
 };
 
 
@@ -83,7 +84,7 @@ function download(){
 	var app = this;
 	if (app.schemaId!="" && app.doDownload){
 		app.doDownload=false;
-		window.location=download_uri+"/"+app.schemaId;
+		window.location=canvasAppConfig.download_uri+"/"+app.schemaId;
 	}
 }
 
@@ -139,12 +140,12 @@ function load(){
 	var loadSection = html.addSection(holder,'loadSection', 'Open Schema', false);
 	html.breakLine(loadSection);
 	$.ajax({ 
-			url: canvasAppConfig.load.uri, 
-			type: canvasAppConfig.load.method, 
+			url: canvasAppConfig.index.uri, 
+			type: canvasAppConfig.index.method, 
 			data: {} 
 	}).done(function(data) {
 		$.each(data, function(key, val){
-			//console.log("open:",val.id, val.name);
+			
 			var span = document.createElement("span");
 			span.innerHTML=val.name;
 			span.setAttribute("class", "loadSchema");
@@ -247,7 +248,6 @@ function validate(text){
 		if (key!=key2) {
 			var r1=inRange(val.from, val.to, val2.from);
 			var r2=inRange(val.from, val.to, val2.to);
-			//console.log(val.from.toString(), val.to.toString(),	val2.from.toString(),r1,val2.to.toString(), r2);
 			if(r1 || r2){
 				addError("Network devices IP ranges overlap.");
 			}			
@@ -277,7 +277,6 @@ function validate(text){
  for (i=0; i<json['arrows'].length; i++){
 	var to = json['arrows'][i].to.split('-');
 	var from = json['arrows'][i].from.split('-');
-	//console.log(to, from);
 	var nets=["routers", "switches"];
 	if ( nets.indexOf(to[0])>=0 ) to[0]="network";
 	if ( nets.indexOf(from[0])>=0 ) from[0]="network";
@@ -289,7 +288,6 @@ function validate(text){
 		addError("Arrow can not connect objects of same type.");
 	}
  }
-console.log(errors);
 return json;
 }
 
@@ -311,7 +309,6 @@ function inRange(from,to,ip){
 	var a = toBinary(f[0])+toBinary(f[1])+toBinary(f[2])+toBinary(f[3]);
 	var b = toBinary(t[0])+toBinary(t[1])+toBinary(t[2])+toBinary(t[3]);
 	var c = toBinary(i[0])+toBinary(i[1])+toBinary(i[2])+toBinary(i[3]); 
-	//console.log(a, parseInt(a,2),b, parseInt(b,2),c , parseInt(c,2));
 	return parseInt(a,2)<=parseInt(c,2) && parseInt(c,2)<=parseInt(b,2);
 }
 
@@ -454,7 +451,6 @@ function updateArrows(json){
 		}
 		for (j=0; j<networks.length; j++){
 			if(networks[j].name==name){
-				//console.log(name, "network is",networks[j]);
 				json.arrows[i].name=networks[j].dev;
 				break;
 			}
@@ -626,7 +622,7 @@ function getOptionsForSelect(){
 this.redraw=drawScreen;
 	
 function init() {
-	console.log(canvasAppConfig);
+	
 	var div = document.getElementById("AppHolder");
 	var prop=document.createElement("div");	
 	prop.setAttribute("id", "formHolder");

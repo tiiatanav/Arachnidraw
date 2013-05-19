@@ -984,9 +984,6 @@ function show_form(el, index){
     var net=this;
     $.each(IPranges, function(key,val){
         if (key!=inf[0]+"-"+inf[1]) {
-
-          //console.log(val.from, val.to, net.dhcpFrom, net.dhcpTo);
-
           var r1=app.inRange(val.from, val.to, net.dhcpFrom);
           var r2=app.inRange(val.from, val.to, net.dhcpTo); 
           if ((r1 || r2) && !found){

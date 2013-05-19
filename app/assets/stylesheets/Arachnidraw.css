@@ -1,0 +1,65 @@
+/*
+  Place all the styles related to the matching controller here.
+  They will automatically be included in application.css.
+*/
+
+ #formHolder{
+ 	border:1px solid gray;
+	float:right; 
+	width:250px;
+	height: 500px;
+	overflow-y: auto;
+ }
+ #myCanvas {
+ 	border:1px solid #d3d3d3;
+
+ }
+ .appSectionTitle { 
+ 	background:#c0c0c0;
+ 	padding:3px;
+ 	border:1px solid gray;
+ }
+ .appSection .appSectionTitle { 
+ 	background:#D7D7D7;
+ 	padding:3px;
+ 	padding-left:20px;
+ 	border:1px solid gray;
+ }
+ .loadSchema{ 
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 13px;
+	color: #4e5457;
+	padding: 3px;
+	margin:1px;
+	padding-left:25px;
+	display:block;
+	background: url('/assets/closed.svg') no-repeat 3px  #F1F3F1;
+	background-size: 20px 20px;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	border: 1px solid #7a7a7a;
+	-moz-box-shadow:
+		0px 1px 3px rgba(000,000,000,0.5),
+		inset 0px 0px 1px rgba(255,255,255,1);
+	-webkit-box-shadow:
+		0px 1px 3px rgba(000,000,000,0.5),
+		inset 0px 0px 1px rgba(255,255,255,1);
+	box-shadow:
+		0px 1px 3px rgba(000,000,000,0.5),
+		inset 0px 0px 1px rgba(255,255,255,1);
+	text-shadow:
+		0px -1px 0px rgba(000,000,000,0.7),
+		0px 1px 0px rgba(255,255,255,0.3);
+
+
+
+ }
+ .loadSchema:hover, .loadedSchema{
+ 	background: url('/assets/open.svg') no-repeat 3px  #FFFFFF;
+ 	background-size: 20px 20px;
+ 	cursor:pointer;
+ }
+
+ .right {float:right;}
+

@@ -88,8 +88,6 @@ class SchemasController < ApplicationController
 
   def download
     @schema = Schema.find(params[:id])
-    #headers["Content-Type"] = "application/x-shellscript"
-    #headers["Content-disposition"] = "attachment; filename=#{@schema.name}.sh"
     send_data( @schema.script, :type=>"application/x-shellscript", :filename => "#{@schema.name}.sh" )
   end
 end
