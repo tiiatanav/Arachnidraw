@@ -172,6 +172,7 @@ function validate(text){
 	var i;
 	/*
  TODO! validate json
+ validate MAC addresses in bridges etc. must have : as delimiter
 	*/
  /* validate that all elements are mentioned in arrows */
  var connected=[];

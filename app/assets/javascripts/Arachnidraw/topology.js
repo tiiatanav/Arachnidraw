@@ -696,9 +696,9 @@ function show_form(el, index){
         html.addLabel(bridgeSection, 'name','Bridge name');
         html.addSubInput(bridgeSection,'text','bridges-name', this.bridges[i].name, i);
         html.breakLine(bridgeSection);
-        html.addLabel(bridgeSection, 'dev','Target dev');
-        html.addSubInput(bridgeSection,'text','bridges-dev',this.bridges[i].dev, i );
-        html.breakLine(bridgeSection);
+        // html.addLabel(bridgeSection, 'dev','Target dev');
+        // html.addSubInput(bridgeSection,'text','bridges-dev',this.bridges[i].dev, i );
+        // html.breakLine(bridgeSection);
       
         html.addLabel(bridgeSection, 'hasMac','Assigning MAC');
         html.addTextSelect(bridgeSection,'bridges-hasMac',this.bridges[i].hasMac, 

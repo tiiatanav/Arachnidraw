@@ -115,13 +115,12 @@ bridge_elements=""
     mac="\n\t\t\t<mac address='#{bridge['mac']}'/>"
   elsif bridge['hasMac']=="ask" then
     askfor+="echo \"Please give the MAC aadress for bridge: #{bridge['name']} @ #{bridge['dev']}\"
-read ${MAC[#{i}]}\n" 
+read MAC[#{i}]\n" 
     mac="\n\t\t\t<mac address='${MAC[#{i}]}'/>"
   end
   bridge_elements+="\t\t<interface type='bridge'> 
 \t\t\t<source bridge='#{bridge['name']}'/>
-\t\t\t<model type='e1000'/>
-\t\t\t<target dev='#{bridge['dev']}'/>#{mac} 
+\t\t\t<model type='e1000'/>#{mac} 
 \t\t</interface>
 "
 end
@@ -168,7 +167,6 @@ end
 \t\t<input type='mouse' bus='usb'/>
 
 \t\t<graphics port='-1' type='vnc' autoport='yes'> 
-\t\t\t<listen type='address' address='1.2.3.4'/>
 \t\t</graphics> 
     
 \t\t<sound model='ac97'> 
@@ -190,7 +188,7 @@ end
 
 \t</devices>
 </domain>  
-LOPP 
+LOPP
 "
   return images+askfor+guest;
 end
@@ -205,7 +203,7 @@ def setup(all)
 XML_DIR=\"/etc/libvirt/qemu/\"
 GUESTS_XML=("
   # go trough all guests and populate arrays
-  script="\n#!/bin/bash
+  script="#!/bin/bash
 
 declare -a disk_sources=("
   disks=[];
@@ -252,7 +250,8 @@ SWITCHES_XML=("
      variables+=" \"${XML_DIR}#{element['name']}.xml\" "
      names+=" \"#{element['name']}\" "
   end
-variables+=")\n\n"
+variables+=")
+MAC=()\n"
 names+=")
 
 for name in ${names[@]}; 
