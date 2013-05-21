@@ -11,8 +11,11 @@ var canvasAppConfig = {
 		"uri":"schemas.json",
 		"method":"PUT" 
 	},
-	"download_uri": "download",
-	"authenticity_token":"tokenElement"
+	"download_uri": "download", // url to download, url/:id
+	"authenticity":{
+		"element":"authToken", // $('meta[name="csrf-token"]').attr('content')
+		"parameterName":"authenticity_token" // $('meta[name="csrf-param"]').attr('content')
+	}
 };
 
 var images = {'menu':['/assets/Arachnidraw/new.svg', '/assets/Arachnidraw/open.svg','/assets/Arachnidraw/save.svg', '/assets/Arachnidraw/hand.svg','/assets/Arachnidraw/arrow2.svg',  '/assets/Arachnidraw/duplicate.svg', '/assets/Arachnidraw/trash.svg', '/assets/Arachnidraw/json.png'],
@@ -76,6 +79,10 @@ this.schemaId="";
 this.schemaName="";
 this.doDownload=false;
 
+// var filterStrength = 20;
+// var frameTime = 0, lastLoop = new Date, thisLoop;
+
+
 /* config done */
 init();
 
@@ -99,12 +106,24 @@ function save(create){
 		displayErrors("Save failed because:")
 		return false;
 	}
+	// get authenticity token
+	var tok=document.getElementById(canvasAppConfig.authenticity.element);
+	if (tok!=null) {
+		var t={"val":tok.innerHTML, "par":canvasAppConfig.authenticity.parameterName};
+	} else {
+		var t={"val":"none", "par":canvasAppConfig.authenticity.parameterName};
+		 // if token element cant be found
+	}
+	// generate save data out of the schema and auth token 
+	var saveData={"schema":{"name": $("#schemaName").val(), "json": makeJSON()}};
+	saveData[t["par"]]=t['val'];
+ 
 	// no errors found during validation
 	if (this.schemaId=="" || create){ // create a new schema
 		$.ajax({ 
 			url: canvasAppConfig.create.uri, 
 			type: canvasAppConfig.create.method, 
-			data: {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}} 
+			data: saveData 
 		}).done(function(data) {
 			//remember this save and let the user continue editing this
 			app.schemaName=data.name;
@@ -118,7 +137,7 @@ function save(create){
 		$.ajax({ 
 			url: canvasAppConfig.update.uri.replace(".json","/"+app.schemaId+".json"), 
 			type: canvasAppConfig.update.method, 
-			data: {"schema":{"name": $("#schemaName").val(), "json": makeJSON()}} 
+			data: saveData 
 		}).done(function() {
 			$("#saveInfo").html("Update was successful").css("color","green"); 
 			app.download();
@@ -145,7 +164,7 @@ function load(){
 			data: {} 
 	}).done(function(data) {
 		$.each(data, function(key, val){
-			
+			console.log(val);
 			var span = document.createElement("span");
 			span.innerHTML=val.name;
 			span.setAttribute("class", "loadSchema");
@@ -641,6 +660,16 @@ function init() {
 	textColor="#000000";
 	shapes = {"nodes":[], "arrows":[], "routers":[], "switches":[]};
 	errors=[];
+	
+// 	var fpsElement=document.createElement("span");
+// 	fpsElement.setAttribute("id", "fps");
+// 	div.appendChild(fpsElement);
+// var fpsOut = document.getElementById('fps');
+// setInterval(function(){
+//   fpsOut.innerHTML = (1000/frameTime).toFixed(1) + " fps";
+// },1000);
+
+
 	drawScreen();
 
 	c.addEventListener("mousedown", mouseDownListener, false);
@@ -703,7 +732,7 @@ function mouseDownListener(evt) {
 		targetY = mouseY - dragHoldY;
 		
 		//start timer
-		timer = setInterval(onTimerTick, 1000/30);
+		timer = setInterval(onTimerTick, 1000/85);
 	} else if (mouseY < menuHeight){
 		// the object being dragged was on the menu
 		for(var prop in menu.items) {
@@ -957,6 +986,11 @@ function drawScreen() {
 	//clear
 	ctx.clearRect(0, 0, c.width, c.height);
    
+
+  //  var thisFrameTime = (thisLoop=new Date) - lastLoop;
+  // frameTime+= (thisFrameTime - frameTime) / filterStrength;
+  // lastLoop = thisLoop;
+
 	drawShapes();		
 }
 }
