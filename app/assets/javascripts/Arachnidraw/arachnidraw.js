@@ -732,7 +732,7 @@ function mouseDownListener(evt) {
 		targetY = mouseY - dragHoldY;
 		
 		//start timer
-		timer = setInterval(onTimerTick, 1000/85);
+		timer = setInterval(onTimerTick, 1000/40);
 	} else if (mouseY < menuHeight){
 		// the object being dragged was on the menu
 		for(var prop in menu.items) {
