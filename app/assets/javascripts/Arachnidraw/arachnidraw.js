@@ -11,10 +11,10 @@ var canvasAppConfig = {
 		"uri":"schemas.json",
 		"method":"PUT" 
 	},
-	"download_uri": "download", // url to download, url/:id
+	"download_uri": "download", 
 	"authenticity":{
-		"element":"authToken", // $('meta[name="csrf-token"]').attr('content')
-		"parameterName":"authenticity_token" // $('meta[name="csrf-param"]').attr('content')
+		"token": "csrf-token", 
+		"name": "csrf-param"
 	}
 };
 
@@ -95,6 +95,16 @@ function download(){
 	}
 }
 
+function getMetaContents(mn){
+  var m = document.getElementsByTagName('meta');
+  for(var i in m){
+   if(m[i].name == mn){
+     return m[i].content;
+   }
+  }
+  return "none";
+}
+
 this.save=save;
 function save(create){
 	var app = this;
@@ -106,18 +116,11 @@ function save(create){
 		displayErrors("Save failed because:")
 		return false;
 	}
-	// get authenticity token
-	var tok=document.getElementById(canvasAppConfig.authenticity.element);
-	if (tok!=null) {
-		var t={"val":tok.innerHTML, "par":canvasAppConfig.authenticity.parameterName};
-	} else {
-		var t={"val":"none", "par":canvasAppConfig.authenticity.parameterName};
-		 // if token element cant be found
-	}
 	// generate save data out of the schema and auth token 
 	var saveData={"schema":{"name": $("#schemaName").val(), "json": makeJSON()}};
-	saveData[t["par"]]=t['val'];
- 
+	// get token from meta tags
+	saveData[getMetaContents(canvasAppConfig.authenticity.name)]=getMetaContents(canvasAppConfig.authenticity.token);
+	
 	// no errors found during validation
 	if (this.schemaId=="" || create){ // create a new schema
 		$.ajax({ 
