@@ -174,6 +174,10 @@ To include the tool in a view add the holder element:
 
 	<div id="AppHolder"></div>
 
+# License #
+
+The source code is available under the MIT license.
+
 # Credits #
 
 Coding Tiia Tänav
